@@ -5,9 +5,9 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git://github.com/localtunnel/localtunnel.git"
+    "url": "git://github.com/theconnectsoft/mygensite.git"
   },
-  "author": "Roman Shtylman <shtylman@gmail.com>",
+  "author": "J <dev@theconnectsoft.com>",
   "contributors": [
     "Roman Shtylman <shtylman@gmail.com>",
     "Gert Hengeveld <gert@hichroma.com>",

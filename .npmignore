@@ -1,0 +1,13 @@
+.git
+.gitignore
+.eslintrc.js
+.travis.yml
+.node-version
+node_modules
+CLAUDE.md
+CHANGELOG.md
+README.en.md
+README.ko.md
+*.spec.js
+yarn.lock
+package-lock.json
