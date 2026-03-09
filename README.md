@@ -1,129 +1,76 @@
-# localtunnel
+# mygensite
 
-localtunnel exposes your localhost to the world for easy testing and sharing! No need to mess with DNS or deploy just to have others test out your changes.
+Expose your localhost to the world via [mygen.site](https://mygen.site) with access control.
 
-Great for working with browser testing tools like browserling or external api callback services like twilio which require a public url for callbacks.
-
-## Quickstart
-
-```
-npx localtunnel --port 8000
-```
-
-## Installation
-
-### Globally
-
-```
-npm install -g localtunnel
-```
-
-### As a dependency in your project
-
-```
-yarn add localtunnel
-```
-
-### Homebrew
+## Install
 
 ```bash
-brew install localtunnel
+npm install mygensite
 ```
 
-## CLI usage
-
-When localtunnel is installed globally, just use the `lt` command to start the tunnel.
-
-```
-lt --port 8000
-```
-
-Thats it! It will connect to the tunnel server, setup the tunnel, and tell you what url to use for your testing. This url will remain active for the duration of your session; so feel free to share it with others for happy fun time!
-
-You can restart your local server all you want, `lt` is smart enough to detect this and reconnect once it is back.
-
-### Arguments
-
-Below are some common arguments. See `lt --help` for additional arguments
-
-- `--subdomain` request a named subdomain on the localtunnel server (default is random characters)
-- `--local-host` proxy to a hostname other than localhost
-
-You may also specify arguments via env variables. E.x.
-
-```
-PORT=3000 lt
-```
-
-## API
-
-The localtunnel client is also usable through an API (for test integration, automation, etc)
-
-### localtunnel(port [,options][,callback])
-
-Creates a new localtunnel to the specified local `port`. Will return a Promise that resolves once you have been assigned a public localtunnel url. `options` can be used to request a specific `subdomain`. A `callback` function can be passed, in which case it won't return a Promise. This exists for backwards compatibility with the old Node-style callback API. You may also pass a single options object with `port` as a property.
+## Tunnel (expose local server)
 
 ```js
-const localtunnel = require("localtunnel");
+const mygensite = require('mygensite');
 
-(async () => {
-  const tunnel = await localtunnel({ port: 3000 });
+const tunnel = await mygensite({
+  port: 3000,                          // required: local port
+  subdomain: 'my-app',                 // optional: default random
+  host: 'https://mygen.site',          // optional: default mygen.site
+  access: 'password',                  // optional: public | password | ip_only | both (default: both)
+  password: 'secret',                  // optional: auto-generated if omitted
+  allowed_ips: ['1.2.3.0/24'],         // optional: for ip_only or both
+  owner_email: 'alice@company.com',    // optional: dashboard management
+  ttl: 3600,                           // optional: seconds, 60-86400 (default: 3600)
+});
 
-  // the assigned public url for your tunnel
-  // i.e. https://abcdefgjhij.localtunnel.me
-  tunnel.url;
+// Result
+tunnel.url          // "https://my-app.mygen.site"
+tunnel.password     // "secret"
+tunnel.admin_token  // "tok_xxx"
+tunnel.expires_at   // "2025-06-01T13:00:00Z"
 
-  tunnel.on("close", () => {
-    // tunnels are closed
-  });
-})();
+// Runtime management
+await tunnel.updateAccess({ mode: 'public' });
+await tunnel.extendTTL(3600);
+
+// Cleanup
+tunnel.close();
 ```
 
-#### options
+## Access Modes
 
-- `port` (number) [required] The local port number to expose through localtunnel.
-- `subdomain` (string) Request a specific subdomain on the proxy server. **Note** You may not actually receive this name depending on availability.
-- `host` (string) URL for the upstream proxy server. Defaults to `https://localtunnel.me`.
-- `local_host` (string) Proxy to this hostname instead of `localhost`. This will also cause the `Host` header to be re-written to this value in proxied requests.
-- `local_https` (boolean) Enable tunneling to local HTTPS server.
-- `local_cert` (string) Path to certificate PEM file for local HTTPS server.
-- `local_key` (string) Path to certificate key file for local HTTPS server.
-- `local_ca` (string) Path to certificate authority file for self-signed certificates.
-- `allow_invalid_cert` (boolean) Disable certificate checks for your local HTTPS server (ignore cert/key/ca options).
+| mode | behavior |
+|------|----------|
+| `public` | anyone can access |
+| `password` | password required |
+| `ip_only` | allowed_ips only |
+| `both` | allowed_ips + password (default) |
 
-Refer to [tls.createSecureContext](https://nodejs.org/api/tls.html#tls_tls_createsecurecontext_options) for details on the certificate options.
+## Error Codes
 
-### Tunnel
+| status | error | when | fix |
+|--------|-------|------|-----|
+| 400 | `invalid_slug` | slug format invalid | use 3-63 chars, lowercase alphanum + hyphen (e.g. `my-app-1`) |
+| 400 | `reserved_slug` | slug is reserved | choose different slug. reserved: www, api, dashboard, admin, etc. |
+| 400 | `invalid_ttl` | TTL out of range | use 60-86400 (seconds) |
+| 400 | `invalid_access` | bad access mode | use: public, password, ip_only, both |
+| 401 | `unauthorized` | wrong admin_token | use the `admin_token` from tunnel creation response |
+| 404 | `not_found` | service not found | verify slug is correct and tunnel is active |
+| 409 | `slug_in_use` | slug already taken | use different slug, or omit `subdomain` for random |
+| 410 | `expired` | TTL expired | call `extendTTL()` or create new tunnel |
+| 502 | — | tunnel offline | restart tunnel client |
 
-The `tunnel` instance returned to your callback emits the following events
+## CLI
 
-| event   | args | description                                                                          |
-| ------- | ---- | ------------------------------------------------------------------------------------ |
-| request | info | fires when a request is processed by the tunnel, contains _method_ and _path_ fields |
-| error   | err  | fires when an error happens on the tunnel                                            |
-| close   |      | fires when the tunnel has closed                                                     |
+```bash
+mygensite --port 3000 --subdomain my-app --access password --password secret --ttl 7200
+```
 
-The `tunnel` instance has the following methods
+## Documentation
 
-| method | args | description      |
-| ------ | ---- | ---------------- |
-| close  |      | close the tunnel |
-
-## other clients
-
-Clients in other languages
-
-_go_ [gotunnelme](https://github.com/NoahShen/gotunnelme)
-
-_go_ [go-localtunnel](https://github.com/localtunnel/go-localtunnel)
-
-_C#/.NET_ [localtunnel-client](https://github.com/angelobreuer/localtunnel.net)
-
-_Rust_ [rlt](https://github.com/kaichaosun/rlt)
-
-## server
-
-See [localtunnel/server](//github.com/localtunnel/server) for details on the server that powers localtunnel.
+- [English (detailed)](./README.en.md) — full API reference, all options, events, methods
+- [한국어](./README.ko.md) — 한국어 상세 문서
 
 ## License
 

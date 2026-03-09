@@ -8,7 +8,7 @@ const localtunnel = require('../localtunnel');
 const { version } = require('../package');
 
 const { argv } = yargs
-  .usage('Usage: lt --port [num] <options>')
+  .usage('Usage: mygensite --port [num] <options>')
   .env(true)
   .option('p', {
     alias: 'port',
@@ -17,7 +17,7 @@ const { argv } = yargs
   .option('h', {
     alias: 'host',
     describe: 'Upstream server providing forwarding',
-    default: 'https://localtunnel.me',
+    default: 'https://mygen.site',
   })
   .option('s', {
     alias: 'subdomain',
@@ -49,6 +49,19 @@ const { argv } = yargs
   .option('print-requests', {
     describe: 'Print basic request info',
   })
+  .option('access', {
+    describe: 'Access control mode: public, password, ip_only, both',
+  })
+  .option('password', {
+    describe: 'Password for access control',
+  })
+  .option('owner-email', {
+    describe: 'Owner email for dashboard management',
+  })
+  .option('ttl', {
+    describe: 'Tunnel TTL in seconds (60-86400)',
+    type: 'number',
+  })
   .require('port')
   .boolean('local-https')
   .boolean('allow-invalid-cert')
@@ -73,6 +86,10 @@ if (typeof argv.port !== 'number') {
     local_key: argv.localKey,
     local_ca: argv.localCa,
     allow_invalid_cert: argv.allowInvalidCert,
+    access: argv.access,
+    password: argv.password,
+    owner_email: argv.ownerEmail,
+    ttl: argv.ttl,
   }).catch(err => {
     throw err;
   });
@@ -82,6 +99,14 @@ if (typeof argv.port !== 'number') {
   });
 
   console.log('your url is: %s', tunnel.url);
+
+  if (tunnel.password) {
+    console.log('your password is: %s', tunnel.password);
+  }
+
+  if (tunnel.admin_token) {
+    console.log('your admin_token is: %s', tunnel.admin_token);
+  }
 
   /**
    * `cachedUrl` is set when using a proxy server that support resource caching.
