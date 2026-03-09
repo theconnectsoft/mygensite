@@ -1,6 +1,7 @@
 const Tunnel = require('./lib/Tunnel');
+const deploy = require('./lib/deploy');
 
-module.exports = function localtunnel(arg1, arg2, arg3) {
+function localtunnel(arg1, arg2, arg3) {
   const options = typeof arg1 === 'object' ? arg1 : { ...arg2, port: arg1 };
   const callback = typeof arg1 === 'object' ? arg2 : arg3;
   const client = new Tunnel(options);
@@ -11,4 +12,8 @@ module.exports = function localtunnel(arg1, arg2, arg3) {
   return new Promise((resolve, reject) =>
     client.open(err => (err ? reject(err) : resolve(client)))
   );
-};
+}
+
+localtunnel.deploy = deploy;
+
+module.exports = localtunnel;
