@@ -187,6 +187,114 @@ await tunnel.extendTTL(3600);
 | 502 | Service is offline (tunnel disconnected) | Restart the tunnel client |
 | 504 | Service timed out | Check that your local server is running and responsive |
 
+## Deploy (static site hosting)
+
+Deploy static files (HTML/CSS/JS) to `{slug}.mygen.site` — no tunnel required.
+
+### mygensite.deploy(options)
+
+Uploads files to the server and returns a site object with management methods. Returns a Promise.
+
+```js
+const mygensite = require('mygensite');
+
+const site = await mygensite.deploy({
+  directory: './dist',
+  subdomain: 'demo',
+  owner_email: 'alice@company.com',
+  access: 'public',
+  ttl: 86400,
+});
+
+console.log(site.url);           // https://demo.mygen.site
+console.log(site.admin_token);   // "tok_yyy"
+console.log(site.slug);          // "demo"
+console.log(site.expires_at);    // "2025-06-02T12:00:00Z"
+```
+
+#### Options
+
+| option | type | required | default | description |
+| --- | --- | --- | --- | --- |
+| `directory` | string | * | — | Local directory to upload. All files are uploaded recursively. |
+| `files` | Array | * | — | Alternative to `directory`. Array of `{ name, content, contentType? }` objects. |
+| `subdomain` | string | | random | Request a specific subdomain. |
+| `host` | string | | `https://mygen.site` | Server URL. |
+| `access` | string | | `both` | Access control mode: `public`, `password`, `ip_only`, `both`. |
+| `password` | string | | auto | Password for access control. |
+| `allowed_ips` | string[] | | — | IP whitelist for `ip_only` or `both` mode. CIDR supported. |
+| `owner_email` | string | | — | Owner email for dashboard management. |
+| `ttl` | number | | 3600 | Site TTL in seconds (60-86400). |
+| `admin_token` | string | | — | Provide for redeployment to an existing slug. |
+
+\* Either `directory` or `files` is required.
+
+#### Deploy with inline files
+
+```js
+const site = await mygensite.deploy({
+  subdomain: 'hello',
+  access: 'public',
+  files: [
+    { name: 'index.html', content: '<h1>Hello World</h1>' },
+    { name: 'style.css', content: 'body { font-family: sans-serif; }' },
+  ],
+});
+```
+
+### Site instance
+
+The returned object contains the deployment result plus convenience methods:
+
+#### Properties
+
+| property | description |
+| --- | --- |
+| `url` | The public URL (`https://{slug}.mygen.site`) |
+| `slug` | The assigned subdomain |
+| `admin_token` | Token for management API calls |
+| `password` | Password (if access control uses password) |
+| `expires_at` | ISO timestamp when the site expires |
+
+#### Methods
+
+| method | args | description |
+| --- | --- | --- |
+| `updateAccess(access)` | `{ mode, password, allowed_ips }` | Update access control. Returns a Promise. |
+| `extendTTL(ttl)` | seconds (number) | Extend the site TTL. Returns a Promise. |
+| `redeploy(directory)` | directory path (string) | Upload new files, replacing all existing files. Returns a Promise. |
+| `delete(purge?)` | purge (boolean) | Delete the site. `false` = soft delete (files kept), `true` = purge S3 files. Returns a Promise. |
+
+### Deploy management examples
+
+```js
+// Redeploy with updated files
+await site.redeploy('./dist-v2');
+
+// Add password protection after deployment
+await site.updateAccess({ mode: 'password', password: 'secret' });
+
+// Extend TTL by 24 hours
+await site.extendTTL(86400);
+
+// Soft delete (slug can be reused, S3 files kept)
+await site.delete();
+
+// Purge delete (S3 files removed, unrecoverable)
+await site.delete(true);
+```
+
+### Deploy error codes
+
+| status | error | description | fix |
+| --- | --- | --- | --- |
+| 400 | `no_files` | At least one file is required | Provide `directory` or `files` option |
+| 400 | `invalid_slug` | Invalid slug format | Use 3-63 chars, lowercase alphanumeric and hyphens |
+| 400 | `reserved_slug` | Slug is reserved | Choose a different slug |
+| 409 | `slug_in_use` | Slug taken by another owner | Use a different slug |
+| 409 | `type_conflict` | Slug is in use as a tunnel | Use a different slug for static deployment |
+| 413 | `file_too_large` | Total upload exceeds 50MB | Reduce file sizes or split into multiple deployments |
+
 ## Compatibility
 
 mygensite is fully compatible with any localtunnel server. Extension options are sent as query parameters and silently ignored by servers that don't support them.

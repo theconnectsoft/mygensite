@@ -187,6 +187,114 @@ await tunnel.extendTTL(3600);
 | 502 | 서비스 오프라인 (터널 연결 끊김) | 터널 클라이언트 재시작 |
 | 504 | 서비스 응답 시간 초과 | 로컬 서버가 실행 중이고 응답 가능한지 확인 |
 
+## 정적 사이트 배포
+
+HTML/CSS/JS 파일을 `{slug}.mygen.site`로 배포합니다 — 터널 불필요.
+
+### mygensite.deploy(options)
+
+파일을 서버에 업로드하고 관리 메서드가 포함된 site 객체를 반환합니다. Promise를 반환합니다.
+
+```js
+const mygensite = require('mygensite');
+
+const site = await mygensite.deploy({
+  directory: './dist',
+  subdomain: 'demo',
+  owner_email: 'alice@company.com',
+  access: 'public',
+  ttl: 86400,
+});
+
+console.log(site.url);           // https://demo.mygen.site
+console.log(site.admin_token);   // "tok_yyy"
+console.log(site.slug);          // "demo"
+console.log(site.expires_at);    // "2025-06-02T12:00:00Z"
+```
+
+#### 옵션
+
+| 옵션 | 타입 | 필수 | 기본값 | 설명 |
+| --- | --- | --- | --- | --- |
+| `directory` | string | * | — | 업로드할 로컬 디렉토리. 하위 파일 전체 재귀 업로드. |
+| `files` | Array | * | — | `directory` 대신 사용. `{ name, content, contentType? }` 객체 배열. |
+| `subdomain` | string | | 랜덤 | 원하는 서브도메인 지정. |
+| `host` | string | | `https://mygen.site` | 서버 URL. |
+| `access` | string | | `both` | 접근 제어 모드: `public`, `password`, `ip_only`, `both`. |
+| `password` | string | | 자동 | 접근 제어 비밀번호. |
+| `allowed_ips` | string[] | | — | `ip_only` 또는 `both` 모드에서 허용할 IP. CIDR 지원. |
+| `owner_email` | string | | — | 대시보드 관리용 소유자 이메일. |
+| `ttl` | number | | 3600 | 사이트 유효 시간(초), 60-86400. |
+| `admin_token` | string | | — | 기존 slug에 재배포할 때 사용. |
+
+\* `directory` 또는 `files` 중 하나는 필수.
+
+#### 인라인 파일로 배포
+
+```js
+const site = await mygensite.deploy({
+  subdomain: 'hello',
+  access: 'public',
+  files: [
+    { name: 'index.html', content: '<h1>Hello World</h1>' },
+    { name: 'style.css', content: 'body { font-family: sans-serif; }' },
+  ],
+});
+```
+
+### Site 인스턴스
+
+반환 객체에 배포 결과와 편의 메서드가 포함됩니다:
+
+#### 속성
+
+| 속성 | 설명 |
+| --- | --- |
+| `url` | 공개 URL (`https://{slug}.mygen.site`) |
+| `slug` | 할당된 서브도메인 |
+| `admin_token` | 관리 API 호출용 토큰 |
+| `password` | 비밀번호 (접근 제어 사용 시) |
+| `expires_at` | 만료 시각 (ISO 형식) |
+
+#### 메서드
+
+| 메서드 | 인자 | 설명 |
+| --- | --- | --- |
+| `updateAccess(access)` | `{ mode, password, allowed_ips }` | 접근 제어 변경. Promise 반환. |
+| `extendTTL(ttl)` | 초 (number) | TTL 연장. Promise 반환. |
+| `redeploy(directory)` | 디렉토리 경로 (string) | 새 파일로 교체 업로드. Promise 반환. |
+| `delete(purge?)` | purge (boolean) | 사이트 삭제. `false` = 소프트 삭제 (파일 유지), `true` = S3 파일까지 삭제. Promise 반환. |
+
+### 배포 관리 예제
+
+```js
+// 새 파일로 재배포
+await site.redeploy('./dist-v2');
+
+// 배포 후 비밀번호 보호 추가
+await site.updateAccess({ mode: 'password', password: 'secret' });
+
+// TTL 24시간 연장
+await site.extendTTL(86400);
+
+// 소프트 삭제 (slug 재사용 가능, S3 파일 유지)
+await site.delete();
+
+// 완전 삭제 (S3 파일 제거, 복구 불가)
+await site.delete(true);
+```
+
+### 배포 에러 코드
+
+| 상태 | 에러 | 설명 | 해결 |
+| --- | --- | --- | --- |
+| 400 | `no_files` | 최소 1개 파일 필요 | `directory` 또는 `files` 옵션 제공 |
+| 400 | `invalid_slug` | 잘못된 slug 형식 | 3-63자, 소문자 영숫자와 하이픈 사용 |
+| 400 | `reserved_slug` | 예약된 slug | 다른 slug 사용 |
+| 409 | `slug_in_use` | 다른 소유자가 사용 중인 slug | 다른 slug 사용 |
+| 409 | `type_conflict` | 터널로 사용 중인 slug | 정적 배포용으로 다른 slug 사용 |
+| 413 | `file_too_large` | 총 업로드 크기 50MB 초과 | 파일 크기 줄이기 |
+
 ## 호환성
 
 mygensite는 모든 localtunnel 서버와 완전 호환됩니다. 확장 옵션은 쿼리 파라미터로 전송되며, 지원하지 않는 서버에서는 무시됩니다.

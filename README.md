@@ -38,6 +38,34 @@ await tunnel.extendTTL(3600);
 tunnel.close();
 ```
 
+## Deploy (static site hosting)
+
+```js
+const mygensite = require('mygensite');
+
+const site = await mygensite.deploy({
+  directory: './dist',                   // required: local directory to upload
+  subdomain: 'demo',                     // optional: default random
+  host: 'https://mygen.site',           // optional: default mygen.site
+  access: 'public',                      // optional: default both
+  owner_email: 'alice@company.com',      // optional: dashboard management
+  ttl: 86400,                            // optional: seconds (default: 3600)
+});
+
+// Result
+site.url            // "https://demo.mygen.site"
+site.admin_token    // "tok_yyy"
+site.slug           // "demo"
+site.expires_at     // "2025-06-02T12:00:00Z"
+
+// Management
+await site.updateAccess({ mode: 'password', password: 'secret' });
+await site.extendTTL(86400);
+await site.redeploy('./dist-v2');   // upload new files
+await site.delete();                // soft delete
+await site.delete(true);            // purge (delete S3 files too)
+```
+
 ## Access Modes
 
 | mode | behavior |
@@ -64,7 +92,10 @@ tunnel.close();
 ## CLI
 
 ```bash
+# Tunnel
 mygensite --port 3000 --subdomain my-app --access password --password secret --ttl 7200
+
+# Deploy (coming soon)
 ```
 
 ## Documentation
