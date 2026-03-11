@@ -127,6 +127,9 @@ yargs
         describe: 'Tunnel TTL in seconds (60-86400)',
         type: 'number',
       })
+      .option('admin-token', {
+        describe: 'Admin token for reconnecting to an existing tunnel',
+      })
       .boolean('local-https')
       .boolean('allow-invalid-cert')
       .boolean('print-requests');
@@ -137,26 +140,31 @@ yargs
       process.exit(1);
     }
 
-    const tunnel = await localtunnel({
-      port: argv.port,
-      host: argv.host,
-      subdomain: argv.subdomain,
-      local_host: argv.localHost,
-      local_https: argv.localHttps,
-      local_cert: argv.localCert,
-      local_key: argv.localKey,
-      local_ca: argv.localCa,
-      allow_invalid_cert: argv.allowInvalidCert,
-      access: argv.access,
-      password: argv.password,
-      owner_email: argv.ownerEmail,
-      ttl: argv.ttl,
-    }).catch(err => {
-      throw err;
-    });
+    let tunnel;
+    try {
+      tunnel = await localtunnel({
+        port: argv.port,
+        host: argv.host,
+        subdomain: argv.subdomain,
+        local_host: argv.localHost,
+        local_https: argv.localHttps,
+        local_cert: argv.localCert,
+        local_key: argv.localKey,
+        local_ca: argv.localCa,
+        allow_invalid_cert: argv.allowInvalidCert,
+        access: argv.access,
+        password: argv.password,
+        owner_email: argv.ownerEmail,
+        ttl: argv.ttl,
+        admin_token: argv.adminToken,
+      });
+    } catch (err) {
+      console.error('tunnel failed: %s', err.message);
+      process.exit(1);
+    }
 
     tunnel.on('error', err => {
-      throw err;
+      console.error('tunnel error: %s', err.message);
     });
 
     console.log('your url is: %s', tunnel.url);
