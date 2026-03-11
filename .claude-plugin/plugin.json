@@ -1,0 +1,14 @@
+{
+  "name": "mygensite",
+  "description": "Share your localhost or static sites via mygen.site with access control",
+  "version": "1.0.0",
+  "author": {
+    "name": "TheConnectSoft",
+    "email": "dev@theconnectsoft.com",
+    "url": "https://mygen.site"
+  },
+  "homepage": "https://mygen.site",
+  "repository": "https://github.com/theconnectsoft/mygensite",
+  "license": "MIT",
+  "keywords": ["tunnel", "deploy", "share", "mygen.site"]
+}
