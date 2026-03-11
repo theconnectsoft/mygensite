@@ -301,10 +301,31 @@ const site = await mygensite.deploy({
   access: 'public',
   files: [
     { name: 'index.html', content: '<h1>Hello World</h1>' },
-    { name: 'style.css', content: 'body { font-family: sans-serif; }' },
+    { name: 'assets/style.css', content: 'body { font-family: sans-serif; }' },
   ],
 });
 ```
+
+#### curl로 배포
+
+Multipart의 `filename`은 디렉토리 경로를 제거합니다 (예: `assets/style.css` &rarr; `style.css`). 서브디렉토리가 있으면 `filepaths` JSON 필드를 사용하세요:
+
+```bash
+# 플랫 파일 (서브디렉토리 없음) - filepaths 불필요
+curl -X POST https://mygen.site/api/deploy \
+  -F slug=demo -F access='{"mode":"public"}' \
+  -F files=@index.html -F files=@style.css
+
+# 서브디렉토리 있음 - filepaths 필수
+curl -X POST https://mygen.site/api/deploy \
+  -F slug=demo -F access='{"mode":"public"}' \
+  -F 'filepaths=["index.html","assets/style.css","assets/js/app.js"]' \
+  -F files=@index.html \
+  -F files=@assets/style.css \
+  -F files=@assets/js/app.js
+```
+
+`filepaths`는 JSON 배열로, 각 원소가 `files` 필드와 순서대로 대응됩니다. 서버는 multipart filename 대신 이 경로를 사용합니다.
 
 ### Site 인스턴스
 
@@ -328,6 +349,35 @@ const site = await mygensite.deploy({
 | `extendTTL(ttl)` | 초 (number) | TTL 연장. Promise 반환. |
 | `redeploy(directory)` | 디렉토리 경로 (string) | 새 파일로 교체 업로드. Promise 반환. |
 | `delete(purge?)` | purge (boolean) | 사이트 삭제. `false` = 소프트 삭제 (파일 유지), `true` = S3 파일까지 삭제. Promise 반환. |
+
+### mygensite.manage(options)
+
+기존 서비스의 `slug`과 `admin_token`이 있을 때 관리 핸들을 생성합니다 (예: 이전 배포에서 저장해둔 값).
+**관리 객체를 얻기 위해 재배포하지 마세요** — 이 함수를 사용하세요.
+
+```js
+const mygensite = require('mygensite');
+
+const site = mygensite.manage({
+  slug: 'demo',
+  admin_token: 'tok_xxx',       // 원래 배포/터널 생성 시 반환된 값
+  host: 'https://mygen.site',   // 선택
+});
+
+// deploy 결과와 동일한 메서드 사용 가능
+await site.updateAccess({ mode: 'public' });
+await site.extendTTL(86400);
+await site.redeploy('./dist-v2');
+await site.delete();
+```
+
+#### 옵션
+
+| 옵션 | 타입 | 필수 | 기본값 | 설명 |
+| --- | --- | --- | --- | --- |
+| `slug` | string | 예 | — | 서비스 slug |
+| `admin_token` | string | 예 | — | 원래 배포/터널 생성 시 반환된 admin token |
+| `host` | string | | `https://mygen.site` | 서버 URL |
 
 ### 배포 관리 예제
 

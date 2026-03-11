@@ -66,6 +66,27 @@ await site.delete();                // soft delete
 await site.delete(true);            // purge (delete S3 files too)
 ```
 
+## Manage (existing service)
+
+Use `manage()` when you already have the `slug` and `admin_token` from a previous deploy or tunnel.
+**Do not redeploy just to get a management object** — use this instead.
+
+```js
+const mygensite = require('mygensite');
+
+const site = mygensite.manage({
+  slug: 'demo',
+  admin_token: 'tok_xxx',       // from the original deploy response
+  host: 'https://mygen.site',   // optional
+});
+
+// Same methods as deploy result
+await site.updateAccess({ mode: 'public' });
+await site.extendTTL(86400);
+await site.redeploy('./dist-v2');
+await site.delete();
+```
+
 ## Access Modes
 
 | mode | behavior |
@@ -146,6 +167,25 @@ mygensite deploy -d ./dist -s private-demo --access password --password 'mypass'
 # Redeploy (reuse admin_token)
 mygensite deploy -d ./dist-v2 -s demo --admin-token tok_xxx
 ```
+
+## curl Deploy
+
+```bash
+# Simple (flat files)
+curl -X POST https://mygen.site/api/deploy \
+  -F slug=demo -F access='{"mode":"public"}' \
+  -F files=@index.html -F files=@style.css
+
+# With subdirectories — use filepaths to preserve directory structure
+curl -X POST https://mygen.site/api/deploy \
+  -F slug=demo -F access='{"mode":"public"}' \
+  -F 'filepaths=["index.html","assets/style.css","assets/js/app.js"]' \
+  -F files=@index.html \
+  -F files=@assets/style.css \
+  -F files=@assets/js/app.js
+```
+
+> **Note:** Multipart `filename` strips directory paths. The `filepaths` JSON field tells the server the correct path for each file, in order.
 
 ## Passwords with Special Characters
 

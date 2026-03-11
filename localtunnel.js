@@ -16,6 +16,7 @@ function localtunnel(arg1, arg2, arg3) {
 }
 
 localtunnel.deploy = deploy;
+localtunnel.manage = deploy.manage;
 localtunnel.validate = validate;
 
 module.exports = localtunnel;

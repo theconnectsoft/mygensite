@@ -301,10 +301,31 @@ const site = await mygensite.deploy({
   access: 'public',
   files: [
     { name: 'index.html', content: '<h1>Hello World</h1>' },
-    { name: 'style.css', content: 'body { font-family: sans-serif; }' },
+    { name: 'assets/style.css', content: 'body { font-family: sans-serif; }' },
   ],
 });
 ```
+
+#### Deploy with curl
+
+Multipart `filename` strips directory paths (e.g. `assets/style.css` becomes `style.css`). Use the `filepaths` JSON field to preserve directory structure:
+
+```bash
+# Flat files (no subdirectories) — filepaths not needed
+curl -X POST https://mygen.site/api/deploy \
+  -F slug=demo -F access='{"mode":"public"}' \
+  -F files=@index.html -F files=@style.css
+
+# With subdirectories — filepaths required
+curl -X POST https://mygen.site/api/deploy \
+  -F slug=demo -F access='{"mode":"public"}' \
+  -F 'filepaths=["index.html","assets/style.css","assets/js/app.js"]' \
+  -F files=@index.html \
+  -F files=@assets/style.css \
+  -F files=@assets/js/app.js
+```
+
+The `filepaths` field is a JSON array where each element corresponds to the `files` field in order. The server uses these paths instead of the multipart filename.
 
 ### Site instance
 
@@ -328,6 +349,34 @@ The returned object contains the deployment result plus convenience methods:
 | `extendTTL(ttl)` | seconds (number) | Extend the site TTL. Returns a Promise. |
 | `redeploy(directory)` | directory path (string) | Upload new files, replacing all existing files. Returns a Promise. |
 | `delete(purge?)` | purge (boolean) | Delete the site. `false` = soft delete (files kept), `true` = purge S3 files. Returns a Promise. |
+
+### mygensite.manage(options)
+
+Create a management handle for an existing service when you already have the `slug` and `admin_token` (e.g. saved from a previous deploy). **Do not redeploy just to get a management object** — use this instead.
+
+```js
+const mygensite = require('mygensite');
+
+const site = mygensite.manage({
+  slug: 'demo',
+  admin_token: 'tok_xxx',       // from the original deploy/tunnel response
+  host: 'https://mygen.site',   // optional
+});
+
+// Same methods as deploy result
+await site.updateAccess({ mode: 'public' });
+await site.extendTTL(86400);
+await site.redeploy('./dist-v2');
+await site.delete();
+```
+
+#### Options
+
+| option | type | required | default | description |
+| --- | --- | --- | --- | --- |
+| `slug` | string | yes | — | The service slug |
+| `admin_token` | string | yes | — | The admin token from the original deploy/tunnel response |
+| `host` | string | | `https://mygen.site` | Server URL |
 
 ### Deploy management examples
 
