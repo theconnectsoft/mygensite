@@ -14,9 +14,10 @@ npm install mygensite
 
 Install the `/share` skill as a plugin — then just say "share this" or "deploy this":
 
-```bash
-# Recommended: plugin install
-claude /plugin install theconnectsoft/mygensite
+```
+# In Claude Code (recommended):
+/plugin marketplace add theconnectsoft/mygensite
+/plugin install mygensite@theconnectsoft-mygensite
 
 # Or manually:
 mkdir -p .claude/skills/share

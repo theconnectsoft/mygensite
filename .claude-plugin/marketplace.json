@@ -1,0 +1,24 @@
+{
+  "name": "theconnectsoft-mygensite",
+  "owner": {
+    "name": "TheConnectSoft",
+    "email": "dev@theconnectsoft.com"
+  },
+  "metadata": {
+    "description": "Share your localhost or static sites via mygen.site",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "mygensite",
+      "source": ".",
+      "description": "Share what you built via mygen.site — tunnels and static deploys with access control",
+      "version": "1.0.0",
+      "author": {
+        "name": "TheConnectSoft"
+      },
+      "homepage": "https://mygen.site",
+      "license": "MIT"
+    }
+  ]
+}
