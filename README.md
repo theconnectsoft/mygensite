@@ -2,11 +2,28 @@
 
 Expose your localhost to the world via [mygen.site](https://mygen.site) with access control.
 
+Built for AI agents — works as a [Claude Code](https://claude.com/claude-code) plugin with a `/share` skill for natural language deployment.
+
 ## Install
 
 ```bash
 npm install mygensite
 ```
+
+## Claude Code Integration
+
+Install the `/share` skill as a plugin — then just say "share this" or "deploy this":
+
+```bash
+# Recommended: plugin install
+claude /plugin install theconnectsoft/mygensite
+
+# Or manually:
+mkdir -p .claude/skills/share
+curl -o .claude/skills/share/SKILL.md https://mygen.site/share-skill.md
+```
+
+The skill auto-detects tunnel vs static deploy, manages tokens, and handles settings changes — no manual API calls needed.
 
 ## Tunnel (expose local server)
 
@@ -225,6 +242,8 @@ const tunnel = await mygensite({ port: 3000, password: 'my!p@ss$word' });
 
 - [English (detailed)](./README.en.md) — full API reference, all options, events, methods
 - [한국어](./README.ko.md) — 한국어 상세 문서
+- [API docs](https://mygen.site/docs) — full endpoint reference
+- [llms.txt](https://mygen.site/llms.txt) — LLM-readable docs
 
 ## License
 
