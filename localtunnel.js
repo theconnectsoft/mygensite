@@ -1,5 +1,6 @@
 const Tunnel = require('./lib/Tunnel');
 const deploy = require('./lib/deploy');
+const validate = require('./lib/validate');
 
 function localtunnel(arg1, arg2, arg3) {
   const options = typeof arg1 === 'object' ? arg1 : { ...arg2, port: arg1 };
@@ -15,5 +16,6 @@ function localtunnel(arg1, arg2, arg3) {
 }
 
 localtunnel.deploy = deploy;
+localtunnel.validate = validate;
 
 module.exports = localtunnel;

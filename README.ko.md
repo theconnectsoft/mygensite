@@ -154,6 +154,70 @@ await tunnel.updateAccess({ mode: 'ip_only', allowed_ips: ['1.2.3.0/24'] });
 await tunnel.extendTTL(3600);
 ```
 
+## 제약사항
+
+### Slug (서브도메인)
+
+- 3–63자, 소문자 영문(`a-z`), 숫자(`0-9`), 하이픈(`-`)만 허용
+- 영문자 또는 숫자로 시작/끝나야 함 (하이픈으로 시작/끝 불가)
+- 예약어 사용 불가: `www`, `api`, `dashboard`, `admin`, `mail`, `ftp`, `static`, `docs`, `status`, `health`, `internal`, `tunnel`, `app`, `web`
+- 터널로 사용 중인 slug에 정적 배포 불가 (반대도 동일). 기존 서비스를 먼저 삭제해야 함.
+
+```
+OK:  my-app, demo-v2, test-123
+BAD: My-App, -dash, ab, a_b, my--app..com
+```
+
+### 파일 경로 (정적 배포)
+
+- 세그먼트별 허용 문자: 영문, 숫자, 하이픈(`-`), 밑줄(`_`), 점(`.`), 공백
+- 슬래시(`/`)로 디렉토리 구조 표현
+- 최대 경로 길이: 1024자, 세그먼트 최대: 255자
+- 경로 탈출(`..`, `.`) 거부
+- 숨김 파일(`.`으로 시작하는 이름) 거부 (예: `.env`, `.git`)
+- 선행 공백, 백슬래시, 제어 문자 불가
+- 전체 업로드 크기 제한: **50 MB**
+
+```
+OK:  index.html, assets/style.css, img/logo 2.png, deep/nested/file.js
+BAD: ../secret.txt, .env, file\name.html
+```
+
+### 정적 파일 서빙 동작
+
+- `/` → `index.html` 제공
+- `/about/` → `about/index.html` 제공
+- `/about` (슬래시 없이) → 해당 파일 먼저 시도, 없으면 `about/index.html`로 폴백
+- Content-Type은 확장자로 결정 (`.css` → `text/css`, `.js` → `application/javascript`)
+- 응답에 `Cache-Control: public, max-age=60` 포함
+
+### TTL
+
+- 최소: 60초 (1분)
+- 최대: 86,400초 (24시간)
+- 기본: 3,600초 (1시간)
+- TTL 연장 시 타이머 리셋 (created_at이 현재 시각으로 변경)
+
+### 클라이언트 사전 검증
+
+라이브러리가 API 호출 전에 입력값을 검증하여 잘못된 값은 즉시 에러를 발생시킵니다:
+
+```js
+// 생성 시점에 즉시 에러 — API 호출 없음
+const tunnel = await mygensite({ port: 3000, subdomain: 'INVALID' });
+// Error: Slug must be lowercase alphanumeric and hyphens...
+
+// 검증 함수 직접 사용
+const { validate } = require('mygensite');
+
+validate.validateSlug('my-app');         // { valid: true }
+validate.validateSlug('AB');             // { valid: false, error: 'Slug must be 3-63 characters' }
+validate.validateFilePath('assets/x.js');// { valid: true, cleaned: 'assets/x.js' }
+validate.validateFilePath('../etc');     // { valid: false, error: '경로 탈출 불가...' }
+validate.validateTTL(30);               // { valid: false, error: 'TTL 범위 초과...' }
+validate.validateAccessMode('public');   // { valid: true }
+```
+
 ## 에러 코드
 
 ### 터널 생성 에러

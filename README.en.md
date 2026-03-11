@@ -154,6 +154,70 @@ await tunnel.updateAccess({ mode: 'ip_only', allowed_ips: ['1.2.3.0/24'] });
 await tunnel.extendTTL(3600);
 ```
 
+## Constraints
+
+### Slug (subdomain)
+
+- 3–63 characters, lowercase letters (`a-z`), numbers (`0-9`), and hyphens (`-`) only
+- Must start and end with a letter or number (not a hyphen)
+- Reserved words cannot be used: `www`, `api`, `dashboard`, `admin`, `mail`, `ftp`, `static`, `docs`, `status`, `health`, `internal`, `tunnel`, `app`, `web`
+- A slug used as a tunnel cannot be reused for static deployment (and vice versa). Delete the existing service first.
+
+```
+OK:  my-app, demo-v2, test-123
+BAD: My-App, -dash, ab, a_b, my--app..com
+```
+
+### File Paths (static deploy)
+
+- Allowed characters per segment: letters, numbers, hyphens (`-`), underscores (`_`), dots (`.`), spaces
+- Forward slashes (`/`) for directory nesting
+- Max total path length: 1024 characters. Max segment length: 255 characters.
+- Path traversal (`..`, `.`) is rejected
+- Hidden files (names starting with `.`) are rejected (e.g. `.env`, `.git`)
+- No leading spaces, backslashes, or control characters
+- Total upload size limit: **50 MB** per deployment
+
+```
+OK:  index.html, assets/style.css, img/logo 2.png, deep/nested/file.js
+BAD: ../secret.txt, .env, file\name.html
+```
+
+### Static File Serving Behavior
+
+- `/` serves `index.html`
+- `/about/` serves `about/index.html`
+- `/about` (no trailing slash) tries the literal file first, then falls back to `about/index.html`
+- Content-Type is determined by file extension (e.g. `.css` → `text/css`, `.js` → `application/javascript`)
+- Responses include `Cache-Control: public, max-age=60`
+
+### TTL
+
+- Minimum: 60 seconds (1 minute)
+- Maximum: 86,400 seconds (24 hours)
+- Default: 3,600 seconds (1 hour)
+- Extending TTL resets the timer (created_at becomes now)
+
+### Client-Side Validation
+
+The library validates inputs before making API calls, throwing an error immediately if values are invalid:
+
+```js
+// Throws at construction time — no API call made
+const tunnel = await mygensite({ port: 3000, subdomain: 'INVALID' });
+// Error: Slug must be lowercase alphanumeric and hyphens...
+
+// Use validators directly for custom checks
+const { validate } = require('mygensite');
+
+validate.validateSlug('my-app');         // { valid: true }
+validate.validateSlug('AB');             // { valid: false, error: 'Slug must be 3-63 characters' }
+validate.validateFilePath('assets/x.js');// { valid: true, cleaned: 'assets/x.js' }
+validate.validateFilePath('../etc');     // { valid: false, error: 'Path traversal...' }
+validate.validateTTL(30);               // { valid: false, error: 'TTL must be...' }
+validate.validateAccessMode('public');   // { valid: true }
+```
+
 ## Error Codes
 
 ### Tunnel creation errors
