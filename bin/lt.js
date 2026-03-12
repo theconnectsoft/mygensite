@@ -29,10 +29,19 @@ yargs
         describe: 'Subdomain (slug)',
       })
       .option('access', {
-        describe: 'Access mode: public, password, ip_only, both',
+        describe: 'Access mode: public, ip',
+      })
+      .option('auth-method', {
+        describe: 'Auth methods (CSV): password, google, telegram',
       })
       .option('password', {
-        describe: 'Password for access control',
+        describe: 'Password for password auth',
+      })
+      .option('google', {
+        describe: 'Allowed Google emails (CSV)',
+      })
+      .option('telegram', {
+        describe: 'Allowed Telegram user IDs (CSV)',
       })
       .option('owner-email', {
         describe: 'Owner email for dashboard',
@@ -51,7 +60,10 @@ yargs
         subdomain: argv.subdomain,
         directory: argv.directory,
         access: argv.access,
+        auth_method: argv.authMethod,
         password: argv.password,
+        google: argv.google,
+        telegram: argv.telegram,
         owner_email: argv.ownerEmail,
         ttl: argv.ttl,
         admin_token: argv.adminToken,
@@ -64,6 +76,9 @@ yargs
       }
       if (result.password) {
         console.log('your password is: %s', result.password);
+      }
+      if (result.auth_methods) {
+        console.log('auth methods: %s', result.auth_methods);
       }
       if (result.expires_at) {
         console.log('expires at: %s', result.expires_at);
@@ -115,10 +130,19 @@ yargs
         describe: 'Print basic request info',
       })
       .option('access', {
-        describe: 'Access control mode: public, password, ip_only, both',
+        describe: 'Access mode: public, ip',
+      })
+      .option('auth-method', {
+        describe: 'Auth methods (CSV): password, google, telegram',
       })
       .option('password', {
-        describe: 'Password for access control',
+        describe: 'Password for password auth',
+      })
+      .option('google', {
+        describe: 'Allowed Google emails (CSV)',
+      })
+      .option('telegram', {
+        describe: 'Allowed Telegram user IDs (CSV)',
       })
       .option('owner-email', {
         describe: 'Owner email for dashboard management',
@@ -153,7 +177,10 @@ yargs
         local_ca: argv.localCa,
         allow_invalid_cert: argv.allowInvalidCert,
         access: argv.access,
+        auth_method: argv.authMethod,
         password: argv.password,
+        google: argv.google,
+        telegram: argv.telegram,
         owner_email: argv.ownerEmail,
         ttl: argv.ttl,
         admin_token: argv.adminToken,
@@ -175,6 +202,10 @@ yargs
 
     if (tunnel.admin_token) {
       console.log('your admin_token is: %s', tunnel.admin_token);
+    }
+
+    if (tunnel.auth_methods) {
+      console.log('auth methods: %s', tunnel.auth_methods);
     }
 
     if (tunnel.cachedUrl) {

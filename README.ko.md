@@ -2,7 +2,7 @@
 
 [mygen.site](https://mygen.site)를 통해 로컬 서버를 접근 제어와 함께 외부에 노출합니다.
 
-[localtunnel](https://github.com/localtunnel/localtunnel) fork에 비밀번호 보호, IP 화이트리스트, TTL, 소유자 관리, admin token 기능을 추가했습니다.
+[localtunnel](https://github.com/localtunnel/localtunnel) fork에 2-레이어 접근 제어(네트워크 + 인증), Google OAuth, Telegram 로그인, TTL, 소유자 관리, admin token 기능을 추가했습니다.
 
 ## 빠른 시작
 
@@ -40,13 +40,16 @@ mygen.site에 연결하여 터널을 생성하고, 사용할 URL을 알려줍니
 - `--subdomain` 원하는 서브도메인 지정 (기본: 랜덤)
 - `--host` 업스트림 서버 URL (기본: `https://mygen.site`)
 - `--local-host` localhost 대신 프록시할 호스트명
-- `--access` 접근 제어 모드: `public`, `password`, `ip_only`, `both` (기본: `both`)
+- `--access` 네트워크 접근 제어: `public`, `ip` (기본: `public`)
+- `--auth-method` 인증 방식 (CSV): `password`, `google`, `telegram`
 - `--password` 접근 제어 비밀번호 (미지정 시 자동 생성)
+- `--google` Google OAuth 허용 이메일 (CSV)
+- `--telegram` Telegram 허용 사용자 ID (CSV)
 - `--owner-email` 대시보드 관리용 소유자 이메일
 - `--ttl` 터널 유효 시간(초), 60-86400 (기본: 3600)
 
 ```
-mygensite --port 3000 --subdomain my-app --access password --password secret --ttl 7200
+mygensite --port 3000 --subdomain my-app --auth-method password --password secret --ttl 7200
 ```
 
 출력에 URL, 비밀번호, admin_token이 포함됩니다.
@@ -70,7 +73,7 @@ const mygensite = require('mygensite');
   const tunnel = await mygensite({
     port: 3000,
     subdomain: 'my-app',
-    access: 'password',
+    auth_method: 'password',
     password: 'secret',
     owner_email: 'alice@company.com',
     ttl: 3600,
@@ -79,7 +82,7 @@ const mygensite = require('mygensite');
   console.log(tunnel.url);           // https://my-app.mygen.site
   console.log(tunnel.password);      // "secret"
   console.log(tunnel.admin_token);   // "tok_xxx"
-  console.log(tunnel.access);        // { mode: "password", ... }
+  console.log(tunnel.access);        // { access: "public", auth_methods: "password", ... }
   console.log(tunnel.expires_at);    // "2025-06-01T13:00:00Z"
 
   tunnel.on('close', () => {
@@ -104,9 +107,12 @@ const mygensite = require('mygensite');
 
 ##### mygensite 확장
 
-- `access` (string) 접근 제어 모드: `public`, `password`, `ip_only`, `both`. 기본값: `both`.
-- `password` (string) 접근 제어 비밀번호. 미지정 시 자동 생성.
-- `allowed_ips` (string[]) `ip_only` 또는 `both` 모드에서 허용할 IP 목록. CIDR 표기 지원.
+- `access` (string) 네트워크 접근 제어 (Layer 1): `public`, `ip`. 기본값: `public`.
+- `auth_method` (string) 인증 방식 (Layer 2, CSV): `password`, `google`, `telegram`. 복수 지정 시 콤마 구분 (예: `password,google`).
+- `password` (string) 접근 제어 비밀번호. `auth_method`에 `password` 포함 시 사용. 미지정 시 자동 생성.
+- `allowed_ips` (string[]) `access`가 `ip`일 때 허용할 IP 목록. CIDR 표기 지원.
+- `google` (string[]) `auth_method`에 `google` 포함 시 허용할 이메일 목록.
+- `telegram` (string[]) `auth_method`에 `telegram` 포함 시 허용할 Telegram 사용자 ID 목록.
 - `owner_email` (string) 대시보드 관리용 소유자 이메일.
 - `ttl` (number) 터널 유효 시간(초), 60-86400. 기본값: 3600.
 
@@ -135,20 +141,20 @@ const mygensite = require('mygensite');
 | 메서드 | 인자 | 설명 |
 | --- | --- | --- |
 | `close()` | | 터널 종료 |
-| `updateAccess(access)` | `{ mode, password, allowed_ips }` | 런타임에 접근 제어 변경. Promise 반환. |
+| `updateAccess(settings)` | object | 런타임에 접근 제어 변경. Promise 반환. |
 | `extendTTL(ttl)` | 초 (number) | 터널 TTL 연장. Promise 반환. |
 
 ### 런타임 관리
 
 ```js
-// 공개로 전환
-await tunnel.updateAccess({ mode: 'public' });
+// 공개로 전환 (인증 제거)
+await tunnel.updateAccess({ access: 'public', auth_method: '' });
 
 // 비밀번호 보호 추가
-await tunnel.updateAccess({ mode: 'password', password: 'newpass' });
+await tunnel.updateAccess({ auth_method: 'password', password: 'newpass' });
 
-// IP 제한
-await tunnel.updateAccess({ mode: 'ip_only', allowed_ips: ['1.2.3.0/24'] });
+// IP 제한 + Google OAuth
+await tunnel.updateAccess({ access: 'ip', allowed_ips: ['1.2.3.0/24'], auth_method: 'google', google: ['user@company.com'] });
 
 // TTL 1시간 연장
 await tunnel.extendTTL(3600);
@@ -227,7 +233,7 @@ validate.validateAccessMode('public');   // { valid: true }
 | 400 | `invalid_slug` | slug는 3-63자, 소문자 영숫자와 하이픈만 가능 | 올바른 형식 사용, 예: `my-app-1` |
 | 400 | `reserved_slug` | 예약된 slug로 사용 불가 | 다른 slug 사용. 예약어: www, api, dashboard, admin 등 |
 | 400 | `invalid_ttl` | TTL은 60-86400초 범위여야 함 | 60(1분) ~ 86400(24시간) 사이 값 사용 |
-| 400 | `invalid_access` | 접근 모드는 public, password, ip_only, both 중 하나 | 4가지 모드 중 하나를 지정 |
+| 400 | `invalid_access` | 접근 모드는 public, ip 중 하나 | `public` 또는 `ip` 중 하나를 지정 |
 | 409 | `slug_in_use` | 이미 사용 중인 slug | 다른 slug 사용, 또는 `subdomain` 생략하여 랜덤 할당 |
 | 503 | — | 서버 일시 장애 | 몇 초 후 재시도 |
 
@@ -237,7 +243,7 @@ validate.validateAccessMode('public');   // { valid: true }
 | --- | --- | --- | --- |
 | 401 | `unauthorized` | admin_token 없음 또는 불일치 | 터널 생성 시 반환된 `admin_token` 사용 |
 | 404 | `not_found` | 서비스 없음 | slug가 맞는지, 터널이 아직 활성 상태인지 확인 |
-| 400 | `invalid_access` | 잘못된 접근 모드 | public, password, ip_only, both 중 하나 사용 |
+| 400 | `invalid_access` | 잘못된 접근 모드 | `public` 또는 `ip` 중 하나 사용 |
 | 400 | `invalid_ttl` | TTL 범위 초과 | 60 ~ 86400 사이 값 사용 |
 
 ### Gateway 에러 (터널 URL 접속 시)
@@ -246,7 +252,7 @@ validate.validateAccessMode('public');   // { valid: true }
 | --- | --- | --- |
 | 404 | 서비스 없음 | slug가 존재하고 삭제되지 않았는지 확인 |
 | 410 | 서비스 만료 | `extendTTL()`로 연장하거나 새 터널 생성 |
-| 403 | IP 접근 거부 | `allowed_ips`에 IP 추가, 또는 `public` 모드로 변경 |
+| 403 | IP 접근 거부 | `allowed_ips`에 IP 추가, 또는 `access`를 `public`으로 변경 |
 | 401 | 비밀번호 틀림 | 올바른 비밀번호로 재시도 |
 | 502 | 서비스 오프라인 (터널 연결 끊김) | 터널 클라이언트 재시작 |
 | 504 | 서비스 응답 시간 초과 | 로컬 서버가 실행 중이고 응답 가능한지 확인 |
@@ -284,9 +290,12 @@ console.log(site.expires_at);    // "2025-06-02T12:00:00Z"
 | `files` | Array | * | — | `directory` 대신 사용. `{ name, content, contentType? }` 객체 배열. |
 | `subdomain` | string | | 랜덤 | 원하는 서브도메인 지정. |
 | `host` | string | | `https://mygen.site` | 서버 URL. |
-| `access` | string | | `both` | 접근 제어 모드: `public`, `password`, `ip_only`, `both`. |
-| `password` | string | | 자동 | 접근 제어 비밀번호. |
-| `allowed_ips` | string[] | | — | `ip_only` 또는 `both` 모드에서 허용할 IP. CIDR 지원. |
+| `access` | string | | `public` | 네트워크 접근 제어 (Layer 1): `public`, `ip`. |
+| `auth_method` | string | | — | 인증 방식 (Layer 2, CSV): `password`, `google`, `telegram`. |
+| `password` | string | | 자동 | 접근 제어 비밀번호. `auth_method`에 `password` 포함 시 사용. |
+| `allowed_ips` | string[] | | — | `access`가 `ip`일 때 허용할 IP. CIDR 지원. |
+| `google` | string[] | | — | `auth_method`에 `google` 포함 시 허용할 이메일 목록. |
+| `telegram` | string[] | | — | `auth_method`에 `telegram` 포함 시 허용할 Telegram 사용자 ID 목록. |
 | `owner_email` | string | | — | 대시보드 관리용 소유자 이메일. |
 | `ttl` | number | | 3600 | 사이트 유효 시간(초), 60-86400. |
 | `admin_token` | string | | — | 기존 slug에 재배포할 때 사용. |
@@ -313,12 +322,12 @@ Multipart의 `filename`은 디렉토리 경로를 제거합니다 (예: `assets/
 ```bash
 # 플랫 파일 (서브디렉토리 없음) - filepaths 불필요
 curl -X POST https://mygen.site/api/deploy \
-  -F slug=demo -F access='{"mode":"public"}' \
+  -F slug=demo -F access=public \
   -F files=@index.html -F files=@style.css
 
 # 서브디렉토리 있음 - filepaths 필수
 curl -X POST https://mygen.site/api/deploy \
-  -F slug=demo -F access='{"mode":"public"}' \
+  -F slug=demo -F access=public \
   -F 'filepaths=["index.html","assets/style.css","assets/js/app.js"]' \
   -F files=@index.html \
   -F files=@assets/style.css \
@@ -345,7 +354,7 @@ curl -X POST https://mygen.site/api/deploy \
 
 | 메서드 | 인자 | 설명 |
 | --- | --- | --- |
-| `updateAccess(access)` | `{ mode, password, allowed_ips }` | 접근 제어 변경. Promise 반환. |
+| `updateAccess(settings)` | object | 접근 제어 변경. Promise 반환. |
 | `extendTTL(ttl)` | 초 (number) | TTL 연장. Promise 반환. |
 | `redeploy(directory)` | 디렉토리 경로 (string) | 새 파일로 교체 업로드. Promise 반환. |
 | `delete(purge?)` | purge (boolean) | 사이트 삭제. `false` = 소프트 삭제 (파일 유지), `true` = S3 파일까지 삭제. Promise 반환. |
@@ -365,7 +374,7 @@ const site = mygensite.manage({
 });
 
 // deploy 결과와 동일한 메서드 사용 가능
-await site.updateAccess({ mode: 'public' });
+await site.updateAccess({ access: 'public' });
 await site.extendTTL(86400);
 await site.redeploy('./dist-v2');
 await site.delete();
@@ -386,7 +395,7 @@ await site.delete();
 await site.redeploy('./dist-v2');
 
 // 배포 후 비밀번호 보호 추가
-await site.updateAccess({ mode: 'password', password: 'secret' });
+await site.updateAccess({ auth_method: 'password', password: 'secret' });
 
 // TTL 24시간 연장
 await site.extendTTL(86400);

@@ -35,9 +35,17 @@ const tunnel = await mygensite({
   port: 3000,                          // required: local port
   subdomain: 'my-app',                 // optional: default random
   host: 'https://mygen.site',          // optional: default mygen.site
-  access: 'password',                  // optional: public | password | ip_only | both (default: both)
-  password: 'secret',                  // optional: auto-generated if omitted
-  allowed_ips: ['1.2.3.0/24'],         // optional: for ip_only or both
+
+  // Layer 1: Network access
+  access: 'public',                    // optional: 'public' | 'ip' (default: 'public')
+  allowed_ips: ['1.2.3.0/24'],         // required when access='ip'
+
+  // Layer 2: Auth method(s)
+  auth_method: 'password',             // optional: CSV of 'password', 'google', 'telegram'
+  password: 'secret',                  // required when auth_method includes 'password'
+  google: 'alice@company.com',         // required when auth_method includes 'google'
+  telegram: '123456',                  // required when auth_method includes 'telegram'
+
   owner_email: 'alice@company.com',    // optional: dashboard management
   ttl: 3600,                           // optional: seconds, 60-86400 (default: 3600)
 });
@@ -49,7 +57,7 @@ tunnel.admin_token  // "tok_xxx"
 tunnel.expires_at   // "2025-06-01T13:00:00Z"
 
 // Runtime management
-await tunnel.updateAccess({ mode: 'public' });
+await tunnel.updateAccess({ access: 'public' });
 await tunnel.extendTTL(3600);
 
 // Cleanup
@@ -65,7 +73,9 @@ const site = await mygensite.deploy({
   directory: './dist',                   // required: local directory to upload
   subdomain: 'demo',                     // optional: default random
   host: 'https://mygen.site',           // optional: default mygen.site
-  access: 'public',                      // optional: default both
+  access: 'public',                      // optional: 'public' | 'ip' (default: 'public')
+  auth_method: 'password',              // optional: CSV of 'password', 'google', 'telegram'
+  password: 'secret',                   // when auth_method includes 'password'
   owner_email: 'alice@company.com',      // optional: dashboard management
   ttl: 86400,                            // optional: seconds (default: 3600)
 });
@@ -77,7 +87,7 @@ site.slug           // "demo"
 site.expires_at     // "2025-06-02T12:00:00Z"
 
 // Management
-await site.updateAccess({ mode: 'password', password: 'secret' });
+await site.updateAccess({ auth_method: 'password', password: 'secret' });
 await site.extendTTL(86400);
 await site.redeploy('./dist-v2');   // upload new files
 await site.delete();                // soft delete
@@ -99,20 +109,30 @@ const site = mygensite.manage({
 });
 
 // Same methods as deploy result
-await site.updateAccess({ mode: 'public' });
+await site.updateAccess({ access: 'public' });
 await site.extendTTL(86400);
 await site.redeploy('./dist-v2');
 await site.delete();
 ```
 
-## Access Modes
+## Access Control (2-Layer Model)
 
-| mode | behavior |
-|------|----------|
-| `public` | anyone can access |
-| `password` | password required |
-| `ip_only` | allowed_ips only |
-| `both` | allowed_ips + password (default) |
+### Layer 1 — Network (`access`)
+| value | behavior |
+|-------|----------|
+| `public` | anyone can reach (default) |
+| `ip` | only `allowed_ips` can reach |
+
+### Layer 2 — Auth (`auth_method`)
+| value | behavior |
+|-------|----------|
+| _(empty)_ | no authentication (default) |
+| `password` | password form + cookie session |
+| `google` | Google OAuth → allowed emails only |
+| `telegram` | Telegram login → allowed user IDs only |
+| `password,google` | password OR Google (user picks) |
+
+Both layers apply sequentially: IP check → auth check.
 
 ## Constraints
 
@@ -163,7 +183,7 @@ validate.validateTTL(30);             // { valid: false, error: '...' }
 | 400 | `invalid_slug` | slug format invalid | use 3-63 chars, lowercase alphanum + hyphen (e.g. `my-app-1`) |
 | 400 | `reserved_slug` | slug is reserved | choose different slug. reserved: www, api, dashboard, admin, etc. |
 | 400 | `invalid_ttl` | TTL out of range | use 60-86400 (seconds) |
-| 400 | `invalid_access` | bad access mode | use: public, password, ip_only, both |
+| 400 | `invalid_access` | bad access mode | use: public, ip |
 | 401 | `unauthorized` | wrong admin_token | use the `admin_token` from tunnel creation response |
 | 404 | `not_found` | service not found | verify slug is correct and tunnel is active |
 | 409 | `slug_in_use` | slug already taken | use different slug, or omit `subdomain` for random |
@@ -173,14 +193,21 @@ validate.validateTTL(30);             // { valid: false, error: '...' }
 ## CLI
 
 ```bash
-# Tunnel
-mygensite --port 3000 --subdomain my-app --access password --password 'secret' --ttl 7200
+# Tunnel (public)
+mygensite --port 3000 --subdomain my-app --ttl 7200
 
-# Deploy
-mygensite deploy --directory ./dist --subdomain demo --access public --ttl 86400
+# Tunnel with password auth
+mygensite --port 3000 --subdomain my-app --auth-method password --password 'secret'
+
+# Tunnel with IP restriction + Google auth
+mygensite --port 3000 -s my-app --access ip --allowed-ips '1.2.3.0/24' \
+  --auth-method google --google 'alice@company.com'
+
+# Deploy (static)
+mygensite deploy --directory ./dist --subdomain demo --ttl 86400
 
 # Deploy with password
-mygensite deploy -d ./dist -s private-demo --access password --password 'mypass'
+mygensite deploy -d ./dist -s private-demo --auth-method password --password 'mypass'
 
 # Redeploy (reuse admin_token)
 mygensite deploy -d ./dist-v2 -s demo --admin-token tok_xxx
@@ -189,14 +216,19 @@ mygensite deploy -d ./dist-v2 -s demo --admin-token tok_xxx
 ## curl Deploy
 
 ```bash
-# Simple (flat files)
+# Simple (flat files, public)
 curl -X POST https://mygen.site/api/deploy \
-  -F slug=demo -F access='{"mode":"public"}' \
+  -F slug=demo -F access=public \
   -F files=@index.html -F files=@style.css
+
+# With password auth
+curl -X POST https://mygen.site/api/deploy \
+  -F slug=demo -F auth_method=password -F password=secret \
+  -F files=@index.html
 
 # With subdirectories — use filepaths to preserve directory structure
 curl -X POST https://mygen.site/api/deploy \
-  -F slug=demo -F access='{"mode":"public"}' \
+  -F slug=demo -F access=public \
   -F 'filepaths=["index.html","assets/style.css","assets/js/app.js"]' \
   -F files=@index.html \
   -F files=@assets/style.css \

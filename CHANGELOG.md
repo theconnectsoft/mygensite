@@ -1,3 +1,44 @@
+# 2.0.0 (2026-03-12) — mygensite
+
+**BREAKING**: Replace old 4-mode access model with 2-layer access control.
+
+### Layer 1 — Network (`access`)
+- `public` — anyone can reach (default)
+- `ip` — only `allowed_ips` can reach
+
+### Layer 2 — Auth (`auth_method`)
+- `password` — password form + cookie session
+- `google` — Google OAuth (allowed emails)
+- `telegram` — Telegram login (allowed user IDs)
+- CSV combinations: `password,google`
+
+### Changes
+- `access` option: `public` | `ip` (was: `public` | `password` | `ip_only` | `both`)
+- New `auth_method` option: CSV of `password`, `google`, `telegram`
+- New `google` option: allowed email(s) for Google OAuth
+- New `telegram` option: allowed Telegram user ID(s)
+- CLI: `--auth-method`, `--google`, `--telegram` flags
+- Client-side strict validation: mismatched params rejected before API call
+- `updateAccess()` now accepts full body object (not just `{ mode }`)
+- `deploy()` sends individual fields instead of JSON `access` object
+
+### Migration from 1.x
+```js
+// Before (1.x)
+mygensite({ port: 3000, access: 'password', password: 'secret' })
+mygensite({ port: 3000, access: 'ip_only', allowed_ips: ['1.2.3.0/24'] })
+mygensite({ port: 3000, access: 'both', password: 'secret', allowed_ips: ['1.2.3.0/24'] })
+
+// After (2.x)
+mygensite({ port: 3000, auth_method: 'password', password: 'secret' })
+mygensite({ port: 3000, access: 'ip', allowed_ips: ['1.2.3.0/24'] })
+mygensite({ port: 3000, access: 'ip', allowed_ips: ['1.2.3.0/24'], auth_method: 'password', password: 'secret' })
+```
+
+---
+
+# Upstream localtunnel changelog (pre-fork)
+
 # 2.0.2 (2021-09-18)
 
 - Upgrade dependencies

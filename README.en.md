@@ -2,7 +2,7 @@
 
 Expose your localhost to the world via [mygen.site](https://mygen.site) with access control.
 
-A fork of [localtunnel](https://github.com/localtunnel/localtunnel) with extended features: password protection, IP whitelisting, TTL, owner management, and admin tokens.
+A fork of [localtunnel](https://github.com/localtunnel/localtunnel) with extended features: 2-layer access control (network + auth), Google OAuth, Telegram login, TTL, owner management, and admin tokens.
 
 ## Quickstart
 
@@ -40,13 +40,16 @@ Below are some common arguments. See `mygensite --help` for all options.
 - `--subdomain` request a named subdomain (default is random)
 - `--host` upstream server URL (default: `https://mygen.site`)
 - `--local-host` proxy to a hostname other than localhost
-- `--access` access control mode: `public`, `password`, `ip_only`, `both` (default: `both`)
-- `--password` password for access control (auto-generated if omitted)
+- `--access` network layer: `public`, `ip` (default: `public`)
+- `--auth-method` auth layer (CSV): `password`, `google`, `telegram`
+- `--password` password (when auth-method includes password)
+- `--google` allowed Google email(s)
+- `--telegram` allowed Telegram user ID(s)
 - `--owner-email` owner email for dashboard management
 - `--ttl` tunnel TTL in seconds, 60-86400 (default: 3600)
 
 ```
-mygensite --port 3000 --subdomain my-app --access password --password secret --ttl 7200
+mygensite --port 3000 --subdomain my-app --auth-method password --password secret --ttl 7200
 ```
 
 Output includes URL, password, and admin_token for runtime management.
@@ -70,7 +73,7 @@ const mygensite = require('mygensite');
   const tunnel = await mygensite({
     port: 3000,
     subdomain: 'my-app',
-    access: 'password',
+    auth_method: 'password',
     password: 'secret',
     owner_email: 'alice@company.com',
     ttl: 3600,
@@ -79,7 +82,7 @@ const mygensite = require('mygensite');
   console.log(tunnel.url);           // https://my-app.mygen.site
   console.log(tunnel.password);      // "secret"
   console.log(tunnel.admin_token);   // "tok_xxx"
-  console.log(tunnel.access);        // { mode: "password", ... }
+  console.log(tunnel.access);        // "public"
   console.log(tunnel.expires_at);    // "2025-06-01T13:00:00Z"
 
   tunnel.on('close', () => {
@@ -104,9 +107,12 @@ const mygensite = require('mygensite');
 
 ##### mygensite extensions
 
-- `access` (string) Access control mode: `public`, `password`, `ip_only`, `both`. Default: `both`.
-- `password` (string) Password for access control. Auto-generated if omitted.
-- `allowed_ips` (string[]) IP whitelist for `ip_only` or `both` mode. Supports CIDR notation.
+- `access` (string) Network access: `public`, `ip`. Default: `public`.
+- `auth_method` (string) Auth methods CSV: `password`, `google`, `telegram`. Default: none.
+- `password` (string) Password (when auth_method includes 'password'). Auto-generated if omitted.
+- `allowed_ips` (string[]) IP whitelist for `ip` access. Supports CIDR notation.
+- `google` (string|string[]) Allowed Google email(s) (when auth_method includes 'google').
+- `telegram` (string|string[]) Allowed Telegram user ID(s) (when auth_method includes 'telegram').
 - `owner_email` (string) Owner email for dashboard management.
 - `ttl` (number) Tunnel TTL in seconds (60-86400). Default: 3600.
 
@@ -135,20 +141,23 @@ const mygensite = require('mygensite');
 | method | args | description |
 | --- | --- | --- |
 | `close()` | | Close the tunnel |
-| `updateAccess(access)` | `{ mode, password, allowed_ips }` | Update access control at runtime. Returns a Promise. |
+| `updateAccess(access)` | `object` | Update access settings at runtime. Returns a Promise. |
 | `extendTTL(ttl)` | seconds (number) | Extend the tunnel TTL. Returns a Promise. |
 
 ### Runtime management
 
 ```js
-// Switch to public access
-await tunnel.updateAccess({ mode: 'public' });
+// Switch to public access (remove auth)
+await tunnel.updateAccess({ auth_method: '' });
 
 // Add password protection
-await tunnel.updateAccess({ mode: 'password', password: 'newpass' });
+await tunnel.updateAccess({ auth_method: 'password', password: 'newpass' });
+
+// Add Google OAuth
+await tunnel.updateAccess({ auth_method: 'password,google', google: 'alice@co.com' });
 
 // Restrict by IP
-await tunnel.updateAccess({ mode: 'ip_only', allowed_ips: ['1.2.3.0/24'] });
+await tunnel.updateAccess({ access: 'ip', allowed_ips: ['1.2.3.0/24'] });
 
 // Extend TTL by 1 hour
 await tunnel.extendTTL(3600);
@@ -227,7 +236,7 @@ validate.validateAccessMode('public');   // { valid: true }
 | 400 | `invalid_slug` | Slug must be 3-63 chars, lowercase alphanumeric and hyphens | Use a valid slug format, e.g. `my-app-1` |
 | 400 | `reserved_slug` | This slug is reserved and cannot be used | Choose a different slug. Reserved: www, api, dashboard, admin, etc. |
 | 400 | `invalid_ttl` | TTL must be between 60 and 86400 seconds | Use a value between 60 (1 min) and 86400 (24 hours) |
-| 400 | `invalid_access` | Access mode must be: public, password, ip_only, both | Use one of the four valid modes |
+| 400 | `invalid_access` | Access must be: public, ip | Use one of the valid access modes |
 | 409 | `slug_in_use` | This slug is already in use | Use a different slug, or omit `subdomain` for a random one |
 | 503 | — | Server is temporarily unavailable | Retry after a few seconds |
 
@@ -237,7 +246,7 @@ validate.validateAccessMode('public');   // { valid: true }
 | --- | --- | --- | --- |
 | 401 | `unauthorized` | Invalid or missing admin_token | Use the `admin_token` returned from tunnel creation |
 | 404 | `not_found` | Service not found | Check that the slug is correct and the tunnel is still active |
-| 400 | `invalid_access` | Invalid access mode | Use one of: public, password, ip_only, both |
+| 400 | `invalid_access` | Access must be: public, ip | Use one of the valid access modes |
 | 400 | `invalid_ttl` | TTL out of range | Use a value between 60 and 86400 |
 
 ### Gateway errors (when accessing the tunnel URL)
@@ -284,9 +293,12 @@ console.log(site.expires_at);    // "2025-06-02T12:00:00Z"
 | `files` | Array | * | — | Alternative to `directory`. Array of `{ name, content, contentType? }` objects. |
 | `subdomain` | string | | random | Request a specific subdomain. |
 | `host` | string | | `https://mygen.site` | Server URL. |
-| `access` | string | | `both` | Access control mode: `public`, `password`, `ip_only`, `both`. |
-| `password` | string | | auto | Password for access control. |
-| `allowed_ips` | string[] | | — | IP whitelist for `ip_only` or `both` mode. CIDR supported. |
+| `access` | string | | `public` | Network access: `public`, `ip`. |
+| `auth_method` | string | | — | Auth methods CSV: `password`, `google`, `telegram`. |
+| `password` | string | | auto | Password (when auth_method includes 'password'). |
+| `google` | string\|string[] | | — | Allowed Google email(s) (when auth_method includes 'google'). |
+| `telegram` | string\|string[] | | — | Allowed Telegram user ID(s) (when auth_method includes 'telegram'). |
+| `allowed_ips` | string[] | | — | IP whitelist for `ip` access. CIDR supported. |
 | `owner_email` | string | | — | Owner email for dashboard management. |
 | `ttl` | number | | 3600 | Site TTL in seconds (60-86400). |
 | `admin_token` | string | | — | Provide for redeployment to an existing slug. |
@@ -313,12 +325,12 @@ Multipart `filename` strips directory paths (e.g. `assets/style.css` becomes `st
 ```bash
 # Flat files (no subdirectories) — filepaths not needed
 curl -X POST https://mygen.site/api/deploy \
-  -F slug=demo -F access='{"mode":"public"}' \
+  -F slug=demo -F access=public \
   -F files=@index.html -F files=@style.css
 
 # With subdirectories — filepaths required
 curl -X POST https://mygen.site/api/deploy \
-  -F slug=demo -F access='{"mode":"public"}' \
+  -F slug=demo -F access=public \
   -F 'filepaths=["index.html","assets/style.css","assets/js/app.js"]' \
   -F files=@index.html \
   -F files=@assets/style.css \
@@ -345,7 +357,7 @@ The returned object contains the deployment result plus convenience methods:
 
 | method | args | description |
 | --- | --- | --- |
-| `updateAccess(access)` | `{ mode, password, allowed_ips }` | Update access control. Returns a Promise. |
+| `updateAccess(access)` | `object` | Update access settings. Returns a Promise. |
 | `extendTTL(ttl)` | seconds (number) | Extend the site TTL. Returns a Promise. |
 | `redeploy(directory)` | directory path (string) | Upload new files, replacing all existing files. Returns a Promise. |
 | `delete(purge?)` | purge (boolean) | Delete the site. `false` = soft delete (files kept), `true` = purge S3 files. Returns a Promise. |
@@ -364,7 +376,7 @@ const site = mygensite.manage({
 });
 
 // Same methods as deploy result
-await site.updateAccess({ mode: 'public' });
+await site.updateAccess({ access: 'public' });
 await site.extendTTL(86400);
 await site.redeploy('./dist-v2');
 await site.delete();
@@ -385,7 +397,7 @@ await site.delete();
 await site.redeploy('./dist-v2');
 
 // Add password protection after deployment
-await site.updateAccess({ mode: 'password', password: 'secret' });
+await site.updateAccess({ auth_method: 'password', password: 'secret' });
 
 // Extend TTL by 24 hours
 await site.extendTTL(86400);
