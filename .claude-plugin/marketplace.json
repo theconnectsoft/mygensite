@@ -5,15 +5,15 @@
     "email": "dev@theconnectsoft.com"
   },
   "metadata": {
-    "description": "Share your localhost or static sites via mygen.site with 2-layer access control",
-    "version": "2.1.0"
+    "description": "Share your localhost or static sites via mygen.site with guided access control and 2-layer security",
+    "version": "2.2.0"
   },
   "plugins": [
     {
       "name": "mygensite",
       "source": "./",
-      "description": "Share what you built via mygen.site — tunnels and static deploys with 2-layer access control (network: public/ip + auth: password/google/telegram)",
-      "version": "2.1.0",
+      "description": "Share what you built via mygen.site — tunnels and static deploys with interactive access control setup on first deploy (public/IP + password/Google/Telegram auth), slug reuse, background tunnel keeper, and unlimited TTL for static sites",
+      "version": "2.2.0",
       "author": {
         "name": "TheConnectSoft"
       },

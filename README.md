@@ -47,7 +47,7 @@ const tunnel = await mygensite({
   telegram: '123456',                  // required when auth_method includes 'telegram'
 
   owner_email: 'alice@company.com',    // optional: email or Telegram username for dashboard
-  ttl: 3600,                           // optional: seconds, 60-86400 (default: 3600)
+  ttl: 3600,                           // optional: 60-86400 seconds (default: 3600)
 });
 
 // Result
@@ -77,7 +77,7 @@ const site = await mygensite.deploy({
   auth_method: 'password',              // optional: CSV of 'password', 'google', 'telegram'
   password: 'secret',                   // when auth_method includes 'password'
   owner_email: 'alice@company.com',      // optional: email or Telegram username for dashboard
-  ttl: 86400,                            // optional: seconds (default: 3600)
+  ttl: 86400,                            // optional: 0 (unlimited) or 60-259200 seconds (default: 3600)
 });
 
 // Result
@@ -134,6 +134,23 @@ await site.delete();
 
 Both layers apply sequentially: IP check → auth check.
 
+## TTL (Time to Live)
+
+| type | range | unlimited |
+|------|-------|-----------|
+| Tunnel | 60–86400 seconds (max 24h) | not supported |
+| Static | 60–259200 seconds (max 3 days) | `ttl: 0` — requires at least one auth method |
+
+Unlimited TTL (`ttl: 0`) is only available for static deploys and requires at least one auth method (password, google, or telegram). You cannot remove auth from a service with unlimited TTL without also setting a finite TTL.
+
+## Examples
+
+Full runnable examples in [`examples/`](https://github.com/theconnectsoft/mygensite/tree/main/examples):
+
+- **[tunnel-basic.mjs](https://github.com/theconnectsoft/mygensite/blob/main/examples/tunnel-basic.mjs)** — Tunnel with signal handling and heartbeat (background-friendly)
+- **[static-deploy.mjs](https://github.com/theconnectsoft/mygensite/blob/main/examples/static-deploy.mjs)** — Static deploy with unlimited TTL and auth
+- **[manage-service.mjs](https://github.com/theconnectsoft/mygensite/blob/main/examples/manage-service.mjs)** — Settings, TTL, redeploy, delete via manage()
+
 ## Constraints
 
 ### Slug (subdomain)
@@ -182,7 +199,7 @@ validate.validateTTL(30);             // { valid: false, error: '...' }
 |--------|-------|------|-----|
 | 400 | `invalid_slug` | slug format invalid | use 3-63 chars, lowercase alphanum + hyphen (e.g. `my-app-1`) |
 | 400 | `reserved_slug` | slug is reserved | choose different slug. reserved: www, api, dashboard, admin, etc. |
-| 400 | `invalid_ttl` | TTL out of range | use 60-86400 (seconds) |
+| 400 | `invalid_ttl` | TTL out of range | tunnels: 60-86400s, static: 0 (unlimited) or 60-259200s. Unlimited requires auth. |
 | 400 | `invalid_access` | bad access mode | use: public, ip |
 | 401 | `unauthorized` | wrong admin_token | use the `admin_token` from tunnel creation response |
 | 404 | `not_found` | service not found | verify slug is correct and tunnel is active |

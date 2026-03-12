@@ -1,7 +1,7 @@
 {
   "name": "mygensite",
-  "description": "Share your localhost or static sites via mygen.site with access control",
-  "version": "2.1.0",
+  "description": "Share your localhost or static sites via mygen.site — guided access control setup, 2-layer security (network + auth), unlimited TTL for static deploys",
+  "version": "2.2.0",
   "author": {
     "name": "TheConnectSoft",
     "email": "dev@theconnectsoft.com",
@@ -10,5 +10,5 @@
   "homepage": "https://mygen.site",
   "repository": "https://github.com/theconnectsoft/mygensite",
   "license": "MIT",
-  "keywords": ["tunnel", "deploy", "share", "mygen.site"]
+  "keywords": ["tunnel", "deploy", "share", "mygen.site", "access-control"]
 }

@@ -8,6 +8,7 @@ allowed-tools: Bash, Read, Glob, Grep, Write, Edit, Agent
 # Share (mygen.site)
 
 Share what the user built via a `{name}.mygen.site` URL.
+Tunnel/deploy creation uses the **mygensite** Node.js library. Settings changes and deletion can use curl.
 
 ## Owner Identity
 
@@ -36,6 +37,24 @@ or for Telegram users (no `@`, not an email — this is valid):
 - Read owner from `.claude/mygen.json` automatically
 - If the user says "change my email" or "change my owner", update the file
 
+## Slug (Domain) Management
+
+### Reuse by default
+- When `.claude/mygen.json` already has a service entry for the **same context** (same port for tunnels, same build directory for static), reuse that slug and `admin_token`.
+- This means running `/share` repeatedly for the same service always keeps the same URL.
+
+### When to ask for a new domain
+Ask the user what domain they want **only when** the context clearly requires a **different** share than what's already saved:
+- Sharing a **different port** than the existing tunnel
+- Sharing a **different directory** or a second static site
+- User explicitly says "share this on a different URL" or "new domain"
+
+Ask: "What subdomain would you like? (e.g. `my-api` → `my-api.mygen.site`, blank for auto-generated)"
+- If blank → let the server auto-generate.
+
+### Domain can be changed later
+Always inform the user (at least on first use): **"You can change the domain anytime by asking, e.g. 'change my domain to new-name'."**
+
 ## Decision: Tunnel vs Static Deploy
 
 Decide **automatically** based on the criteria below. Do not ask the user.
@@ -63,11 +82,7 @@ Check if mygensite is installed:
 npx mygensite --help 2>/dev/null || npm install -g mygensite
 ```
 
-Load owner email:
-```bash
-cat .claude/mygen.json 2>/dev/null
-```
-If missing, ask the user and save it.
+Load config from `.claude/mygen.json`. If missing, ask the user for owner identity.
 
 ### 1. Analyze the project
 
@@ -76,84 +91,190 @@ Quickly assess the project structure:
 - Check for build output directories
 - Check for server start scripts
 - Check for running local servers (lsof -i -P | grep LISTEN)
+- Check `.claude/mygen.json` for existing services matching current context
+
+### 1.5. Access Control Setup (first deploy only)
+
+**Skip this step** if reusing an existing service from `.claude/mygen.json` (same port/directory context). Settings are already saved.
+
+On the **first deploy** of a new service, ask the user these questions:
+
+#### Q1. Network access
+> **Who should be able to access this?**
+> 1. **Public** — anyone with the link (default)
+> 2. **IP-restricted** — only your current IP
+
+If IP-restricted, detect the user's public IP:
+```bash
+curl -s https://ifconfig.me
+```
+
+#### Q2. Authentication (recommended)
+> **Do you want to add authentication?** (recommended for security)
+> 1. **Password** — visitors enter a password to access
+> 2. **Google OAuth** — only specific Google accounts can access
+> 3. **Telegram** — only specific Telegram users can access
+> 4. **None** — no authentication
+
+If the user picks auth, ask for the details:
+- **Password**: "What password should visitors use?" (or auto-generate one)
+- **Google**: "Which email addresses should have access? (comma-separated)"
+- **Telegram**: "Which Telegram user IDs should have access? (comma-separated)"
+
+Multiple auth methods can be combined (e.g. password + Google — visitors can use either).
+
+#### Applying the choices
+
+Use the answers to set these parameters in the deploy/tunnel script:
+```js
+access: 'public',            // or 'ip'
+allowed_ips: ['1.2.3.4'],    // only when access='ip', user's detected IP
+auth_method: 'password',     // or 'google', 'telegram', 'password,google', or omit
+password: 'chosen-password',  // when auth_method includes 'password'
+google: 'alice@co.com',      // when auth_method includes 'google'
+telegram: '123456789',       // when auth_method includes 'telegram'
+```
+
+Save the chosen access settings in `.claude/mygen.json` alongside the service entry so they can be reused on redeploy.
+
+> **Tip**: If `$ARGUMENTS` explicitly says "public" or "password", skip the questions and use that directly.
 
 ### 2-A. Static deploy
 
 Build first if needed:
 ```bash
-# Framework-specific (example)
-npm run build
+npm run build  # or framework-appropriate command
 ```
 
-Deploy:
+Write a temporary deploy script `.claude/mygen-deploy.mjs` and run it:
+
+```js
+import localtunnel from 'mygensite';
+
+const site = await localtunnel.deploy({
+  directory: './dist',              // auto-detect: dist, build, out, .next, or '.'
+  subdomain: '{slug_or_undefined}', // from mygen.json or omit for auto
+  owner_email: '{owner_email}',
+  access: '{access}',              // from access control setup
+  auth_method: '{auth_method}',    // from access control setup, omit if none
+  password: '{password}',          // when auth_method includes 'password'
+  google: '{emails}',              // when auth_method includes 'google'
+  telegram: '{ids}',               // when auth_method includes 'telegram'
+  ttl: 86400,
+  admin_token: '{token_or_undefined}', // if redeploying existing service
+});
+
+console.log(JSON.stringify({
+  url: site.url, slug: site.slug,
+  admin_token: site.admin_token,
+  password: site.password || null,
+  expires_at: site.expires_at || null,
+}));
+```
+
 ```bash
-npx mygensite deploy \
-  --directory ./dist \
-  --owner-email {email} \
-  --access ${ARGUMENTS:-public} \
-  --ttl 86400
+node .claude/mygen-deploy.mjs && rm .claude/mygen-deploy.mjs
 ```
 
-- `--directory`: build output directory (auto-detect dist, build, out, etc.)
-- If no build directory exists and there are only HTML files, use current directory (`.`)
-- Default access is public
-- TTL is 24 hours
+Parse the JSON output, update `.claude/mygen.json`.
 
 ### 2-B. Tunnel
 
 Check if a local server is running; if not, start it:
 ```bash
-# Check running ports
 lsof -i -P | grep LISTEN | grep -E ':(3000|5173|8000|8080|4200|5000)'
 ```
 
-If no server is running:
-```bash
-# Find dev/start script in package.json and run it
-npm run dev &
-# Or framework-appropriate command
+If no server is running, start it in background first.
+
+Write a tunnel keeper script `.claude/mygen-tunnel.mjs`:
+
+```js
+import localtunnel from 'mygensite';
+
+const tunnel = await localtunnel({
+  port: {detected_port},
+  subdomain: '{slug_or_undefined}',
+  owner_email: '{owner_email}',
+  access: '{access}',
+  auth_method: '{auth_method}',    // from access control setup, omit if none
+  password: '{password}',          // when auth_method includes 'password'
+  google: '{emails}',              // when auth_method includes 'google'
+  telegram: '{ids}',               // when auth_method includes 'telegram'
+  ttl: 3600,
+  admin_token: '{token_or_undefined}',
+});
+
+// Output connection info as JSON (first line)
+console.log(JSON.stringify({
+  url: tunnel.url, slug: tunnel.clientId,
+  admin_token: tunnel.admin_token,
+  password: tunnel.password || null,
+  expires_at: tunnel.expires_at || null,
+}));
+
+// Keep alive — graceful shutdown on signals
+process.on('SIGINT', () => { tunnel.close(); process.exit(0); });
+process.on('SIGTERM', () => { tunnel.close(); process.exit(0); });
+tunnel.on('close', () => { console.error('Tunnel closed'); process.exit(1); });
+tunnel.on('error', (err) => { console.error('Tunnel error:', err.message); });
+
+// Heartbeat every 5 min
+setInterval(() => {
+  console.error(`[tunnel] alive — ${tunnel.url}`);
+}, 5 * 60 * 1000);
 ```
 
-Find the server port and create a tunnel:
+Run in background and capture output:
 ```bash
-npx mygensite \
-  --port {detected port} \
-  --owner-email {email} \
-  --access ${ARGUMENTS:-public} \
-  --ttl 3600
+node .claude/mygen-tunnel.mjs > .claude/mygen-tunnel-out.log 2>.claude/mygen-tunnel-err.log &
+TUNNEL_PID=$!
+echo $TUNNEL_PID > .claude/mygen-tunnel.pid
+
+# Wait for tunnel to initialize
+for i in $(seq 1 10); do
+  if [ -s .claude/mygen-tunnel-out.log ]; then break; fi
+  sleep 1
+done
+cat .claude/mygen-tunnel-out.log
 ```
 
-- Default access is public
-- TTL is 1 hour (shorter for tunnels)
-- **CRITICAL: The tunnel process must keep running.** The tunnel only works while the `npx mygensite` process is alive. If it exits, the tunnel closes immediately and users get 502. Run it in a way that stays alive (e.g. background with `&`, separate terminal, or keep the script running).
+- **CRITICAL**: The tunnel keeper script stays running in background. Do NOT delete it while active.
+- PID is saved to `.claude/mygen-tunnel.pid` for later management.
+- The script handles SIGINT/SIGTERM gracefully and logs heartbeats to stderr.
 
 ### 3. Save results and inform the user
 
-**Always** save the result (slug, admin_token) to `.claude/mygen.json`:
+**Always** save the result (slug, admin_token, access settings) to `.claude/mygen.json`:
 ```json
 {
   "owner_email": "user@company.com",
   "services": {
     "{slug}": {
       "admin_token": "tok_xxx",
-      "type": "static",
+      "type": "tunnel",
+      "port": 3000,
       "url": "https://{slug}.mygen.site",
+      "access": "public",
+      "auth_method": "password",
       "created_at": "2025-06-01T12:00:00Z"
     }
   }
 }
 ```
 
-After deploy/tunnel completes, inform the user **concisely**:
+After deploy/tunnel completes, inform the user **concisely** based on settings:
 
+**Public, no auth:**
 ```
 URL: https://{slug}.mygen.site
 
 Share this link — anyone can access it.
 Auto-expires in 24 hours.
+You can change the domain or access settings anytime — just ask.
 ```
 
-If password-protected:
+**With password auth:**
 ```
 URL: https://{slug}.mygen.site
 Password: {password}
@@ -161,10 +282,32 @@ Password: {password}
 Share the link and password together.
 ```
 
-If tunnel, add:
+**With Google auth:**
 ```
-The tunnel stays open as long as this process is running.
-Do NOT close this terminal or kill the process — the tunnel will stop working.
+URL: https://{slug}.mygen.site
+Allowed: {emails}
+
+Only the listed Google accounts can access (via OAuth login).
+```
+
+**With IP restriction:**
+```
+URL: https://{slug}.mygen.site
+Restricted to: {ip}
+
+Only accessible from the allowed IP address.
+```
+
+If tunnel:
+```
+Tunnel running in background (PID: {pid}).
+It stays open as long as the process is alive.
+```
+
+### 4. Add to .gitignore
+
+```bash
+grep -q '.claude/' .gitignore 2>/dev/null || echo '.claude/' >> .gitignore
 ```
 
 ## Settings Changes (PATCH)
@@ -185,8 +328,9 @@ const site = mygensite.manage({
   admin_token: '{admin_token}',  // read from .claude/mygen.json
 });
 
-await site.updateAccess({ mode: 'public' });
-await site.updateAccess({ mode: 'password', password: 'new-password' });
+await site.updateAccess({ access: 'public', auth_method: '' });
+await site.updateAccess({ auth_method: 'password', password: 'new-password' });
+await site.updateAccess({ auth_method: 'password,google', password: 'pw', google: 'a@co.com' });
 await site.extendTTL(86400);
 await site.redeploy('./dist');  // only when files changed
 await site.delete();
@@ -199,46 +343,47 @@ await site.delete();
 Read the admin_token for the service from `.claude/mygen.json`:
 
 ```bash
-# Change access mode (e.g. password -> public)
+# Make fully public (no auth)
 curl -X PATCH https://mygen.site/api/services/{slug} \
   -H "Authorization: Bearer {admin_token}" \
   -H "Content-Type: application/json" \
-  -d '{"access": {"mode": "public"}}'
+  -d '{"access": "public", "auth_method": ""}'
 
-# Change password
+# Add password auth
 curl -X PATCH https://mygen.site/api/services/{slug} \
   -H "Authorization: Bearer {admin_token}" \
   -H "Content-Type: application/json" \
-  -d '{"access": {"password": "new-password"}}'
+  -d '{"auth_method": "password", "password": "new-password"}'
 
-# Add IP restriction
+# Add Google OAuth + password
 curl -X PATCH https://mygen.site/api/services/{slug} \
   -H "Authorization: Bearer {admin_token}" \
   -H "Content-Type: application/json" \
-  -d '{"access": {"mode": "ip_only", "allowed_ips": ["1.2.3.0/24"]}}'
+  -d '{"auth_method": "password,google", "password": "pw", "google": "alice@co.com"}'
+
+# Restrict by IP
+curl -X PATCH https://mygen.site/api/services/{slug} \
+  -H "Authorization: Bearer {admin_token}" \
+  -H "Content-Type: application/json" \
+  -d '{"access": "ip", "allowed_ips": "1.2.3.0/24"}'
 
 # Extend TTL (timer resets from now)
 curl -X PATCH https://mygen.site/api/services/{slug} \
   -H "Authorization: Bearer {admin_token}" \
   -H "Content-Type: application/json" \
   -d '{"ttl": 86400}'
-
-# Change owner email
-curl -X PATCH https://mygen.site/api/services/{slug} \
-  -H "Authorization: Bearer {admin_token}" \
-  -H "Content-Type: application/json" \
-  -d '{"owner_email": "new@company.com"}'
 ```
 
 ### PATCH vs Redeploy
 
 | Request | Method |
 |---------|--------|
-| Change password | PATCH `access.password` |
-| Make it public | PATCH `access.mode` |
-| Restrict by IP | PATCH `access.allowed_ips` |
+| Change password | PATCH `auth_method` + `password` |
+| Make it public | PATCH `access` + `auth_method: ""` |
+| Add Google auth | PATCH `auth_method` + `google` |
+| Restrict by IP | PATCH `access: "ip"` + `allowed_ips` |
 | Extend time | PATCH `ttl` |
-| Change email | PATCH `owner_email` |
+| Change owner | PATCH `owner_email` (email or Telegram username) |
 | Update content (files changed) | Redeploy (`deploy --admin-token`) |
 | Upload new files | Redeploy (`deploy --admin-token`) |
 
@@ -266,12 +411,40 @@ curl -X DELETE "https://mygen.site/api/services/{slug}?purge=true" \
 
 After deleting, also remove the service entry from `.claude/mygen.json`.
 
+## Tunnel Management
+
+### Check if tunnel is running
+```bash
+if [ -f .claude/mygen-tunnel.pid ]; then
+  PID=$(cat .claude/mygen-tunnel.pid)
+  kill -0 $PID 2>/dev/null && echo "Running (PID $PID)" || echo "Stopped"
+fi
+```
+
+### Stop tunnel
+```bash
+if [ -f .claude/mygen-tunnel.pid ]; then
+  kill $(cat .claude/mygen-tunnel.pid) 2>/dev/null
+  rm -f .claude/mygen-tunnel.pid .claude/mygen-tunnel-out.log .claude/mygen-tunnel-err.log
+fi
+```
+
+### Restart tunnel
+Stop the old one, then run Step 2-B again. The same slug and admin_token will be reused from `.claude/mygen.json`.
+
+## Reference
+
+- API docs: https://mygen.site/docs (NOT /api/docs)
+- LLM-readable docs: https://mygen.site/llms.txt
+
 ## Important Notes
 
-- Do not ask the user for technical choices. Decide automatically.
-- Let the slug (subdomain) be auto-generated unless the user specifies one.
+- Do not ask the user for technical choices (tunnel vs static). Decide automatically.
+- **Reuse the same slug** for the same context. Only ask for a new domain when sharing something different (different port, different directory, etc.).
 - Handle errors yourself (port conflicts, build failures, etc.).
-- If `$ARGUMENTS` is "password", deploy with password protection.
-- If `$ARGUMENTS` is empty, deploy as public.
+- If `$ARGUMENTS` explicitly specifies access (e.g. "password", "public"), skip the access control questions and use that directly.
+- If `$ARGUMENTS` is empty, ask the access control questions on first deploy.
 - admin_token is issued **only once**. If lost, it cannot be recovered. Always save to `.claude/mygen.json`.
-- Add `.claude/mygen.json` to `.gitignore` (contains tokens).
+- **For tunnel/deploy creation, use the mygensite Node.js library** (not curl). For PATCH settings and DELETE, curl is fine.
+- Clean up temp scripts after use. Keep `.claude/mygen-tunnel.mjs` alive while tunnel is running.
+- Add `.claude/` to `.gitignore` (contains tokens).
