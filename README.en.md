@@ -420,6 +420,11 @@ await site.delete(true);
 | 409 | `type_conflict` | Slug is in use as a tunnel | Use a different slug for static deployment |
 | 413 | `file_too_large` | Total upload exceeds 50MB | Reduce file sizes or split into multiple deployments |
 
+## Documentation
+
+- [API docs](https://mygen.site/docs) — full endpoint reference
+- [LLM-readable docs](https://mygen.site/llms.txt)
+
 ## Compatibility
 
 mygensite is fully compatible with any localtunnel server. Extension options are sent as query parameters and silently ignored by servers that don't support them.

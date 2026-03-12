@@ -46,7 +46,7 @@ const tunnel = await mygensite({
   google: 'alice@company.com',         // required when auth_method includes 'google'
   telegram: '123456',                  // required when auth_method includes 'telegram'
 
-  owner_email: 'alice@company.com',    // optional: dashboard management
+  owner_email: 'alice@company.com',    // optional: email or Telegram username for dashboard
   ttl: 3600,                           // optional: seconds, 60-86400 (default: 3600)
 });
 
@@ -76,7 +76,7 @@ const site = await mygensite.deploy({
   access: 'public',                      // optional: 'public' | 'ip' (default: 'public')
   auth_method: 'password',              // optional: CSV of 'password', 'google', 'telegram'
   password: 'secret',                   // when auth_method includes 'password'
-  owner_email: 'alice@company.com',      // optional: dashboard management
+  owner_email: 'alice@company.com',      // optional: email or Telegram username for dashboard
   ttl: 86400,                            // optional: seconds (default: 3600)
 });
 

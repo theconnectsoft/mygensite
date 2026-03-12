@@ -418,6 +418,11 @@ await site.delete(true);
 | 409 | `type_conflict` | 터널로 사용 중인 slug | 정적 배포용으로 다른 slug 사용 |
 | 413 | `file_too_large` | 총 업로드 크기 50MB 초과 | 파일 크기 줄이기 |
 
+## 문서
+
+- [API 문서](https://mygen.site/docs) — 전체 엔드포인트 레퍼런스
+- [LLM용 문서](https://mygen.site/llms.txt)
+
 ## 호환성
 
 mygensite는 모든 localtunnel 서버와 완전 호환됩니다. 확장 옵션은 쿼리 파라미터로 전송되며, 지원하지 않는 서버에서는 무시됩니다.

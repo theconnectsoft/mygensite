@@ -9,21 +9,31 @@ allowed-tools: Bash, Read, Glob, Grep, Write, Edit, Agent
 
 Share what the user built via a `{name}.mygen.site` URL.
 
-## Owner Email
+## Owner Identity
 
-Deploys and tunnels require `--owner-email`. The email is used for dashboard management.
+Deploys and tunnels require `--owner-email`. This identifies who owns the service on the dashboard.
+
+The value can be either:
+- **Email address** (for Google login users): `alice@company.com`
+- **Telegram username** (for Telegram login users): `thetelegramuser`
+
+Ownership matching is case-insensitive.
 
 ### First use
 1. Check if `.claude/mygen.json` exists
-2. If not, ask the user **once**: "What email should I use for service management? (used for dashboard login)"
+2. If not, ask the user **once**: "What email or Telegram username should I use for service management? (used for dashboard login)"
 3. Save it to `.claude/mygen.json`:
 ```json
 { "owner_email": "user@company.com" }
 ```
+or for Telegram users:
+```json
+{ "owner_email": "telegram_username" }
+```
 
 ### Subsequent uses
-- Read email from `.claude/mygen.json` automatically
-- If the user says "change my email", update the file
+- Read owner from `.claude/mygen.json` automatically
+- If the user says "change my email" or "change my owner", update the file
 
 ## Decision: Tunnel vs Static Deploy
 

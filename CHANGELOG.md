@@ -1,3 +1,16 @@
+# 2.1.0 (2026-03-12) — mygensite
+
+### Features
+- `owner_email` now accepts Telegram usernames in addition to email addresses
+- Dashboard login supports both Google OAuth and Telegram
+- Ownership matching is case-insensitive (works for both email and Telegram username)
+
+### Documentation
+- Updated all docs (llms.txt, share-skill, docs page, README) to reflect Telegram owner support
+- Skill files updated: "Owner Email" → "Owner Identity" with Telegram username examples
+
+---
+
 # 2.0.0 (2026-03-12) — mygensite
 
 **BREAKING**: Replace old 4-mode access model with 2-layer access control.
