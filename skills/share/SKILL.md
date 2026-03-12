@@ -22,13 +22,14 @@ Ownership matching is case-insensitive.
 ### First use
 1. Check if `.claude/mygen.json` exists
 2. If not, ask the user **once**: "What email or Telegram username should I use for service management? (used for dashboard login)"
-3. Save it to `.claude/mygen.json`:
+3. **Do NOT validate the format as email-only.** The value can be a plain username without `@` — that's a valid Telegram username. Accept any non-empty string the user provides.
+4. Save it to `.claude/mygen.json`:
 ```json
 { "owner_email": "user@company.com" }
 ```
-or for Telegram users:
+or for Telegram users (no `@`, not an email — this is valid):
 ```json
-{ "owner_email": "telegram_username" }
+{ "owner_email": "mytelegramuser" }
 ```
 
 ### Subsequent uses
