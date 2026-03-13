@@ -10,10 +10,10 @@ allowed-tools: Bash, Read, Glob, Grep, Write, Edit, Agent
 Share what the user built via a `{name}.mygen.site` URL.
 Tunnel/deploy creation uses the **mygensite** Node.js library. Settings changes and deletion can use curl.
 
-## Owner Identity (optional)
+## Owner Identity
 
-`--owner-email` is **optional**. It links the service to a dashboard account for web-based management.
-Without it, you can still manage everything via `admin_token` (PATCH, DELETE, redeploy).
+`--owner-email` links the service to a dashboard account for web-based management.
+The user can also skip this — management via `admin_token` (PATCH, DELETE, redeploy) always works.
 
 The value can be either:
 - **Email address** (for Google login users): `alice@company.com`
@@ -23,7 +23,7 @@ Ownership matching is case-insensitive.
 
 ### First use
 1. Check if `.claude/mygen.json` exists
-2. If not, ask the user **once**: "Email or Telegram username for dashboard management? (optional — skip with Enter, you can still manage via admin_token)"
+2. If not, **you MUST ask the user**: "Email or Telegram username for dashboard management? (Enter to skip)"
 3. **Do NOT validate the format as email-only.** The value can be a plain username without `@` — that's a valid Telegram username. Accept any non-empty string the user provides.
 4. If the user provides a value, save it to `.claude/mygen.json`:
 ```json
