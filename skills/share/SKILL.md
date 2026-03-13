@@ -63,8 +63,8 @@ Ask:
 - If the user specifies a slug and it's **already taken** (409 error), inform them and ask again:
   > `my-api.mygen.site` is already taken. Choose another subdomain? (Enter for random)
 
-### Domain can be changed later
-Always inform the user (at least on first use): **"You can change the domain anytime by asking, e.g. 'change my domain to new-name'."**
+### Domain cannot be changed after creation
+The subdomain (slug) is permanent once created. To use a different domain, create a new service and delete the old one. Inform the user on first use: **"The subdomain can't be changed later — choose carefully, or press Enter for a random one."**
 
 ## Decision: Tunnel vs Static Deploy
 
