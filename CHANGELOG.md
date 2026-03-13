@@ -1,3 +1,22 @@
+# 2.3.0 (2026-03-13) — mygensite
+
+### Rules (new)
+- **deployment-awareness**: Recognizes active mygen.site deployments and suggests redeploy after file changes
+- **safe-defaults**: Defaults to password protection unless user explicitly requests public access
+- **tunnel-keepalive**: Enforces proper keepalive patterns in tunnel scripts (setInterval, signal handlers, event listeners)
+
+### Hooks (new)
+- **git-guard** (PreToolUse): Blocks staging of `.claude/mygen*` files containing admin tokens
+- **tunnel-cleanup** (PostToolUse): Automatically removes stale tunnel PID/log/script files for dead processes
+- **tunnel-reminder** (Stop): Notifies about running tunnels when the session ends
+
+### Multi-tunnel support
+- PID, log, and script files are now slug-based: `mygen-tunnel-{slug}.pid`, `mygen-tunnel-{slug}.mjs`, etc.
+- Multiple tunnels can run simultaneously without file conflicts
+- Added "Check all tunnels" and "Stop all tunnels" commands in SKILL.md
+
+---
+
 # 2.1.0 (2026-03-12) — mygensite
 
 ### Features

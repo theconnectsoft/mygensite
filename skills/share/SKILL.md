@@ -187,7 +187,7 @@ lsof -i -P | grep LISTEN | grep -E ':(3000|5173|8000|8080|4200|5000)'
 
 If no server is running, start it in background first.
 
-Write a tunnel keeper script `.claude/mygen-tunnel.mjs`:
+Write a tunnel keeper script `.claude/mygen-tunnel-{slug}.mjs` (slug-based filename for multi-tunnel support):
 
 ```js
 import localtunnel from 'mygensite';
@@ -225,22 +225,22 @@ setInterval(() => {
 }, 5 * 60 * 1000);
 ```
 
-Run in background and capture output:
+Run in background and capture output (use the slug in all filenames):
 ```bash
-node .claude/mygen-tunnel.mjs > .claude/mygen-tunnel-out.log 2>.claude/mygen-tunnel-err.log &
+node .claude/mygen-tunnel-{slug}.mjs > .claude/mygen-tunnel-{slug}-out.log 2>.claude/mygen-tunnel-{slug}-err.log &
 TUNNEL_PID=$!
-echo $TUNNEL_PID > .claude/mygen-tunnel.pid
+echo $TUNNEL_PID > .claude/mygen-tunnel-{slug}.pid
 
 # Wait for tunnel to initialize
 for i in $(seq 1 10); do
-  if [ -s .claude/mygen-tunnel-out.log ]; then break; fi
+  if [ -s .claude/mygen-tunnel-{slug}-out.log ]; then break; fi
   sleep 1
 done
-cat .claude/mygen-tunnel-out.log
+cat .claude/mygen-tunnel-{slug}-out.log
 ```
 
 - **CRITICAL**: The tunnel keeper script stays running in background. Do NOT delete it while active.
-- PID is saved to `.claude/mygen-tunnel.pid` for later management.
+- PID is saved to `.claude/mygen-tunnel-{slug}.pid` for later management (slug-based, supports multiple tunnels).
 - The script handles SIGINT/SIGTERM gracefully and logs heartbeats to stderr.
 
 ### 3. Save results and inform the user
@@ -413,20 +413,47 @@ After deleting, also remove the service entry from `.claude/mygen.json`.
 
 ## Tunnel Management
 
+All tunnel files use slug-based names (`mygen-tunnel-{slug}.*`) to support multiple simultaneous tunnels.
+
 ### Check if tunnel is running
 ```bash
-if [ -f .claude/mygen-tunnel.pid ]; then
-  PID=$(cat .claude/mygen-tunnel.pid)
+if [ -f .claude/mygen-tunnel-{slug}.pid ]; then
+  PID=$(cat .claude/mygen-tunnel-{slug}.pid)
   kill -0 $PID 2>/dev/null && echo "Running (PID $PID)" || echo "Stopped"
 fi
 ```
 
+### Check all tunnels
+```bash
+for pidfile in .claude/mygen-tunnel-*.pid; do
+  [ -f "$pidfile" ] || continue
+  SLUG=$(basename "$pidfile" | sed 's/mygen-tunnel-//;s/\.pid//')
+  PID=$(cat "$pidfile")
+  if kill -0 "$PID" 2>/dev/null; then
+    echo "$SLUG: Running (PID $PID)"
+  else
+    echo "$SLUG: Stopped"
+  fi
+done
+```
+
 ### Stop tunnel
 ```bash
-if [ -f .claude/mygen-tunnel.pid ]; then
-  kill $(cat .claude/mygen-tunnel.pid) 2>/dev/null
-  rm -f .claude/mygen-tunnel.pid .claude/mygen-tunnel-out.log .claude/mygen-tunnel-err.log
+if [ -f .claude/mygen-tunnel-{slug}.pid ]; then
+  kill $(cat .claude/mygen-tunnel-{slug}.pid) 2>/dev/null
+  rm -f .claude/mygen-tunnel-{slug}.pid .claude/mygen-tunnel-{slug}-out.log .claude/mygen-tunnel-{slug}-err.log .claude/mygen-tunnel-{slug}.mjs
 fi
+```
+
+### Stop all tunnels
+```bash
+for pidfile in .claude/mygen-tunnel-*.pid; do
+  [ -f "$pidfile" ] || continue
+  PID=$(cat "$pidfile")
+  SLUG=$(basename "$pidfile" | sed 's/mygen-tunnel-//;s/\.pid//')
+  kill "$PID" 2>/dev/null
+  rm -f "$pidfile" ".claude/mygen-tunnel-${SLUG}-out.log" ".claude/mygen-tunnel-${SLUG}-err.log" ".claude/mygen-tunnel-${SLUG}.mjs"
+done
 ```
 
 ### Restart tunnel

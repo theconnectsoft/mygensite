@@ -1,0 +1,19 @@
+{
+  "hooks": [
+    {
+      "event": "PreToolUse",
+      "script": "hooks/git-guard.sh",
+      "description": "Prevent staging mygen secret files"
+    },
+    {
+      "event": "PostToolUse",
+      "script": "hooks/tunnel-cleanup.sh",
+      "description": "Clean stale tunnel PID files"
+    },
+    {
+      "event": "Stop",
+      "script": "hooks/tunnel-reminder.sh",
+      "description": "Remind about running tunnels on session end"
+    }
+  ]
+}
