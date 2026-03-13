@@ -283,7 +283,7 @@ URL: https://{slug}.mygen.site
 
 Share this link — anyone can access it.
 Auto-expires in 24 hours.
-You can change the domain or access settings anytime — just ask.
+You can change access settings anytime — just ask.
 ```
 
 **With password auth:**
