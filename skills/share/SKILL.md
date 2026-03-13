@@ -48,14 +48,20 @@ or for Telegram users (no `@`, not an email — this is valid):
 - When `.claude/mygen.json` already has a service entry for the **same context** (same port for tunnels, same build directory for static), reuse that slug and `admin_token`.
 - This means running `/share` repeatedly for the same service always keeps the same URL.
 
-### When to ask for a new domain
-Ask the user what domain they want **only when** the context clearly requires a **different** share than what's already saved:
-- Sharing a **different port** than the existing tunnel
-- Sharing a **different directory** or a second static site
-- User explicitly says "share this on a different URL" or "new domain"
+### New service — always ask for subdomain
+When there is **no matching service** in `.claude/mygen.json` for the current context, you MUST ask for a subdomain. This happens when:
+- First time running `/share` in a project (no `.claude/mygen.json` or empty services)
+- Sharing a **different port** than any existing tunnel entry
+- Sharing a **different build directory** than any existing static entry
+- User explicitly asks for a "new URL", "different domain", "새 도메인" etc.
 
-Ask: "What subdomain would you like? (e.g. `my-api` → `my-api.mygen.site`, blank for auto-generated)"
-- If blank → let the server auto-generate.
+Ask:
+> **Subdomain?** (Enter for random: `auto-generated.mygen.site`)
+> e.g. `my-api` → `my-api.mygen.site`
+
+- Default (Enter/blank) → server auto-generates a random slug
+- If the user specifies a slug and it's **already taken** (409 error), inform them and ask again:
+  > `my-api.mygen.site` is already taken. Choose another subdomain? (Enter for random)
 
 ### Domain can be changed later
 Always inform the user (at least on first use): **"You can change the domain anytime by asking, e.g. 'change my domain to new-name'."**
@@ -467,7 +473,7 @@ Stop the old one, then run Step 2-B again. The same slug and admin_token will be
 ## Important Notes
 
 - Do not ask the user for technical choices (tunnel vs static). Decide automatically.
-- **Reuse the same slug** for the same context. Only ask for a new domain when sharing something different (different port, different directory, etc.).
+- **Reuse the same slug** for the same context. Ask for a subdomain on every new deploy (default: random).
 - Handle errors yourself (port conflicts, build failures, etc.).
 - If `$ARGUMENTS` explicitly specifies access (e.g. "password", "public"), skip the access control questions and use that directly.
 - If `$ARGUMENTS` is empty, ask the access control questions on first deploy.
