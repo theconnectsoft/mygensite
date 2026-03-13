@@ -114,12 +114,12 @@ If IP-restricted, detect the user's public IP:
 curl -s https://ifconfig.me
 ```
 
-#### Q2. Authentication (recommended)
-> **Do you want to add authentication?**
-> 1. **Password** — visitors enter a password to access (recommended)
+#### Q2. Authentication
+> **Password protection is enabled by default.** Choose an authentication method:
+> 1. **Password** — visitors enter a password to access (default)
 > 2. **Google OAuth** — only specific Google accounts can access
 > 3. **Telegram** — only specific Telegram users can access
-> 4. **None** — no authentication
+> 4. **None** — no authentication (not recommended)
 
 If the user picks auth, ask for the details:
 - **Password**: "What password should visitors use?" (or auto-generate one)
@@ -132,8 +132,8 @@ Multiple auth methods can be combined (e.g. password + Google — visitors can u
 
 Use the answers to set these parameters in the deploy/tunnel script:
 ```js
-access: 'public',            // or 'ip'
-allowed_ips: ['1.2.3.4'],    // only when access='ip', user's detected IP
+access: 'ip',                // 'ip' (recommended) or 'public'
+allowed_ips: ['1.2.3.4'],    // user's detected IP (auto-detect via curl ifconfig.me)
 auth_method: 'password',     // or 'google', 'telegram', 'password,google', or omit
 password: 'chosen-password',  // when auth_method includes 'password'
 google: 'alice@co.com',      // when auth_method includes 'google'
@@ -260,7 +260,8 @@ cat .claude/mygen-tunnel-{slug}-out.log
       "type": "tunnel",
       "port": 3000,
       "url": "https://{slug}.mygen.site",
-      "access": "public",
+      "access": "ip",
+      "allowed_ips": ["1.2.3.4"],
       "auth_method": "password",
       "created_at": "2025-06-01T12:00:00Z"
     }
