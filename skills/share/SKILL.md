@@ -10,9 +10,10 @@ allowed-tools: Bash, Read, Glob, Grep, Write, Edit, Agent
 Share what the user built via a `{name}.mygen.site` URL.
 Tunnel/deploy creation uses the **mygensite** Node.js library. Settings changes and deletion can use curl.
 
-## Owner Identity
+## Owner Identity (optional)
 
-Deploys and tunnels require `--owner-email`. This identifies who owns the service on the dashboard.
+`--owner-email` is **optional**. It links the service to a dashboard account for web-based management.
+Without it, you can still manage everything via `admin_token` (PATCH, DELETE, redeploy).
 
 The value can be either:
 - **Email address** (for Google login users): `alice@company.com`
@@ -22,15 +23,19 @@ Ownership matching is case-insensitive.
 
 ### First use
 1. Check if `.claude/mygen.json` exists
-2. If not, ask the user **once**: "What email or Telegram username should I use for service management? (used for dashboard login)"
+2. If not, ask the user **once**: "Email or Telegram username for dashboard management? (optional — skip with Enter, you can still manage via admin_token)"
 3. **Do NOT validate the format as email-only.** The value can be a plain username without `@` — that's a valid Telegram username. Accept any non-empty string the user provides.
-4. Save it to `.claude/mygen.json`:
+4. If the user provides a value, save it to `.claude/mygen.json`:
 ```json
 { "owner_email": "user@company.com" }
 ```
 or for Telegram users (no `@`, not an email — this is valid):
 ```json
 { "owner_email": "mytelegramuser" }
+```
+5. If the user skips (empty), save without owner_email:
+```json
+{}
 ```
 
 ### Subsequent uses
@@ -101,8 +106,8 @@ On the **first deploy** of a new service, ask the user these questions:
 
 #### Q1. Network access
 > **Who should be able to access this?**
-> 1. **Public** — anyone with the link (default)
-> 2. **IP-restricted** — only your current IP
+> 1. **Public** — anyone with the link
+> 2. **IP-restricted** — only your current IP (recommended)
 
 If IP-restricted, detect the user's public IP:
 ```bash
@@ -110,8 +115,8 @@ curl -s https://ifconfig.me
 ```
 
 #### Q2. Authentication (recommended)
-> **Do you want to add authentication?** (recommended for security)
-> 1. **Password** — visitors enter a password to access
+> **Do you want to add authentication?**
+> 1. **Password** — visitors enter a password to access (recommended)
 > 2. **Google OAuth** — only specific Google accounts can access
 > 3. **Telegram** — only specific Telegram users can access
 > 4. **None** — no authentication
@@ -173,7 +178,7 @@ console.log(JSON.stringify({
 ```
 
 ```bash
-node .claude/mygen-deploy.mjs && rm .claude/mygen-deploy.mjs
+node .claude/mygen-deploy.mjs
 ```
 
 Parse the JSON output, update `.claude/mygen.json`.
@@ -302,12 +307,6 @@ If tunnel:
 ```
 Tunnel running in background (PID: {pid}).
 It stays open as long as the process is alive.
-```
-
-### 4. Add to .gitignore
-
-```bash
-grep -q '.claude/' .gitignore 2>/dev/null || echo '.claude/' >> .gitignore
 ```
 
 ## Settings Changes (PATCH)
