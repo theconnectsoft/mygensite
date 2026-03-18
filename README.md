@@ -48,6 +48,7 @@ const tunnel = await mygensite({
 
   owner_email: 'alice@company.com',    // optional: email or Telegram username for dashboard
   ttl: 3600,                           // optional: 60-86400 seconds (default: 3600)
+  token: 'mgs_xxx',                    // optional: API token (or set MYGENSITE_TOKEN env)
 });
 
 // Result
@@ -78,6 +79,7 @@ const site = await mygensite.deploy({
   password: 'secret',                   // when auth_method includes 'password'
   owner_email: 'alice@company.com',      // optional: email or Telegram username for dashboard
   ttl: 86400,                            // optional: 0 (unlimited) or 60-259200 seconds (default: 3600)
+  token: 'mgs_xxx',                      // optional: API token (or set MYGENSITE_TOKEN env)
 });
 
 // Result
@@ -133,6 +135,31 @@ await site.delete();
 | `password,google` | password OR Google (user picks) |
 
 Both layers apply sequentially: IP check → auth check.
+
+## API Token Authentication
+
+By default, service creation (tunnel/deploy) is restricted to allowed IPs. To create from any IP, generate an API token from the [dashboard](https://mygen.site/dashboard/api).
+
+```js
+// Option 1: Pass token directly
+const tunnel = await mygensite({ port: 3000, token: 'mgs_xxx' });
+const site = await mygensite.deploy({ directory: './dist', token: 'mgs_xxx' });
+
+// Option 2: Set environment variable (auto-detected)
+// export MYGENSITE_TOKEN=mgs_xxx
+const tunnel = await mygensite({ port: 3000 });  // token picked up from env
+```
+
+```bash
+# CLI
+mygensite --port 3000 --token mgs_xxx
+mygensite deploy -d ./dist --token mgs_xxx
+
+# Or via environment variable
+MYGENSITE_TOKEN=mgs_xxx mygensite --port 3000
+```
+
+When using an API token, `owner_email` is automatically set to the token owner's account email.
 
 ## TTL (Time to Live)
 
@@ -228,6 +255,10 @@ mygensite deploy -d ./dist -s private-demo --auth-method password --password 'my
 
 # Redeploy (reuse admin_token)
 mygensite deploy -d ./dist-v2 -s demo --admin-token tok_xxx
+
+# With API token (skip IP restriction)
+mygensite --port 3000 -s my-app --token mgs_xxx
+MYGENSITE_TOKEN=mgs_xxx mygensite deploy -d ./dist -s demo
 ```
 
 ## curl Deploy

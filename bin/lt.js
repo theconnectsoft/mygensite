@@ -52,6 +52,9 @@ yargs
       })
       .option('admin-token', {
         describe: 'Admin token for redeployment',
+      })
+      .option('token', {
+        describe: 'API token (mgs_xxx) for authentication. Also reads MYGENSITE_TOKEN env.',
       });
   }, async (argv) => {
     try {
@@ -67,6 +70,7 @@ yargs
         owner_email: argv.ownerEmail,
         ttl: argv.ttl,
         admin_token: argv.adminToken,
+        token: argv.token,
       });
 
       console.log('your url is: %s', result.url);
@@ -154,6 +158,9 @@ yargs
       .option('admin-token', {
         describe: 'Admin token for reconnecting to an existing tunnel',
       })
+      .option('token', {
+        describe: 'API token (mgs_xxx) for authentication. Also reads MYGENSITE_TOKEN env.',
+      })
       .boolean('local-https')
       .boolean('allow-invalid-cert')
       .boolean('print-requests');
@@ -184,6 +191,7 @@ yargs
         owner_email: argv.ownerEmail,
         ttl: argv.ttl,
         admin_token: argv.adminToken,
+        token: argv.token,
       });
     } catch (err) {
       console.error('tunnel failed: %s', err.message);
