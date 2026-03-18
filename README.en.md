@@ -43,7 +43,7 @@ Below are some common arguments. See `mygensite --help` for all options.
 - `--access` network layer: `public`, `ip` (default: `public`)
 - `--auth-method` auth layer (CSV): `password`, `google`, `telegram`
 - `--password` password (when auth-method includes password)
-- `--google` allowed Google email(s)
+- `--google` allowed Google email(s) or `@domain.com` patterns
 - `--telegram` allowed Telegram user ID(s)
 - `--owner-email` owner email for dashboard management
 - `--ttl` tunnel TTL in seconds, 60-86400 (default: 3600)
@@ -111,7 +111,7 @@ const mygensite = require('mygensite');
 - `auth_method` (string) Auth methods CSV: `password`, `google`, `telegram`. Default: none.
 - `password` (string) Password (when auth_method includes 'password'). Auto-generated if omitted.
 - `allowed_ips` (string[]) IP whitelist for `ip` access. Supports CIDR notation.
-- `google` (string|string[]) Allowed Google email(s) (when auth_method includes 'google').
+- `google` (string|string[]) Allowed Google email(s) or domain patterns like `@company.com` (when auth_method includes 'google').
 - `telegram` (string|string[]) Allowed Telegram user ID(s) (when auth_method includes 'telegram').
 - `owner_email` (string) Owner email for dashboard management.
 - `ttl` (number) Tunnel TTL in seconds (60-86400). Default: 3600.
@@ -296,7 +296,7 @@ console.log(site.expires_at);    // "2025-06-02T12:00:00Z"
 | `access` | string | | `public` | Network access: `public`, `ip`. |
 | `auth_method` | string | | — | Auth methods CSV: `password`, `google`, `telegram`. |
 | `password` | string | | auto | Password (when auth_method includes 'password'). |
-| `google` | string\|string[] | | — | Allowed Google email(s) (when auth_method includes 'google'). |
+| `google` | string\|string[] | | — | Allowed Google email(s) or `@domain.com` patterns (when auth_method includes 'google'). |
 | `telegram` | string\|string[] | | — | Allowed Telegram user ID(s) (when auth_method includes 'telegram'). |
 | `allowed_ips` | string[] | | — | IP whitelist for `ip` access. CIDR supported. |
 | `owner_email` | string | | — | Owner email for dashboard management. |

@@ -42,6 +42,27 @@ or for Telegram users (no `@`, not an email — this is valid):
 - Read owner from `.claude/mygen.json` automatically
 - If the user says "change my email" or "change my owner", update the file
 
+## API Token (optional)
+
+If the `MYGENSITE_TOKEN` env variable is set, or `token` option is passed, the mygensite client automatically uses it for authentication. This allows service creation from any IP address.
+
+The token can be generated from the dashboard: https://mygen.site/dashboard/api
+
+Usage:
+```bash
+# Environment variable (recommended — auto-detected)
+export MYGENSITE_TOKEN=mgs_xxx
+
+# Or pass directly in code
+const tunnel = await mygensite({ port: 3000, token: 'mgs_xxx' });
+const site = await mygensite.deploy({ directory: './dist', token: 'mgs_xxx' });
+
+# Or CLI flag
+mygensite --port 3000 --token mgs_xxx
+```
+
+When a token is used, `owner_email` is automatically set to the token owner's email. The `.claude/mygen.json` `owner_email` is still used for display purposes but won't override the token-based owner.
+
 ## Slug (Domain) Management
 
 ### Reuse by default
@@ -129,7 +150,7 @@ curl -s https://ifconfig.me
 
 If the user picks auth, ask for the details:
 - **Password**: "What password should visitors use?" (or auto-generate one)
-- **Google**: "Which email addresses should have access? (comma-separated)"
+- **Google**: "Which email addresses should have access? (comma-separated, use @domain.com to allow an entire domain)"
 - **Telegram**: "Which Telegram user IDs should have access? (comma-separated)"
 
 Multiple auth methods can be combined (e.g. password + Google — visitors can use either).
@@ -142,7 +163,7 @@ access: 'ip',                // 'ip' (recommended) or 'public'
 allowed_ips: ['1.2.3.4'],    // user's detected IP (auto-detect via curl ifconfig.me)
 auth_method: 'password',     // or 'google', 'telegram', 'password,google', or omit
 password: 'chosen-password',  // when auth_method includes 'password'
-google: 'alice@co.com',      // when auth_method includes 'google'
+google: 'alice@co.com,@co.com', // when auth_method includes 'google' (supports @domain.com)
 telegram: '123456789',       // when auth_method includes 'telegram'
 ```
 
@@ -478,6 +499,7 @@ Stop the old one, then run Step 2-B again. The same slug and admin_token will be
 - If `$ARGUMENTS` explicitly specifies access (e.g. "password", "public"), skip the access control questions and use that directly.
 - If `$ARGUMENTS` is empty, ask the access control questions on first deploy.
 - admin_token is issued **only once**. If lost, it cannot be recovered. Always save to `.claude/mygen.json`.
+- If service creation fails with `creator_ip_denied` (403), the user's IP is not in the server's allow-list. 
 - **For tunnel/deploy creation, use the mygensite Node.js library** (not curl). For PATCH settings and DELETE, curl is fine.
 - Clean up temp scripts after use. Keep `.claude/mygen-tunnel.mjs` alive while tunnel is running.
 - Add `.claude/` to `.gitignore` (contains tokens).

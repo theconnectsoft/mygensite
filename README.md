@@ -43,7 +43,7 @@ const tunnel = await mygensite({
   // Layer 2: Auth method(s)
   auth_method: 'password',             // optional: CSV of 'password', 'google', 'telegram'
   password: 'secret',                  // required when auth_method includes 'password'
-  google: 'alice@company.com',         // required when auth_method includes 'google'
+  google: 'alice@company.com,@company.com', // required when auth_method includes 'google' (supports @domain.com patterns)
   telegram: '123456',                  // required when auth_method includes 'telegram'
 
   owner_email: 'alice@company.com',    // optional: email or Telegram username for dashboard
@@ -130,7 +130,7 @@ await site.delete();
 |-------|----------|
 | _(empty)_ | no authentication (default) |
 | `password` | password form + cookie session |
-| `google` | Google OAuth → allowed emails only |
+| `google` | Google OAuth → allowed emails only (supports `@domain.com` patterns) |
 | `telegram` | Telegram login → allowed user IDs only |
 | `password,google` | password OR Google (user picks) |
 

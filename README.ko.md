@@ -43,7 +43,7 @@ mygen.site에 연결하여 터널을 생성하고, 사용할 URL을 알려줍니
 - `--access` 네트워크 접근 제어: `public`, `ip` (기본: `public`)
 - `--auth-method` 인증 방식 (CSV): `password`, `google`, `telegram`
 - `--password` 접근 제어 비밀번호 (미지정 시 자동 생성)
-- `--google` Google OAuth 허용 이메일 (CSV)
+- `--google` Google OAuth 허용 이메일 또는 `@domain.com` 패턴 (CSV)
 - `--telegram` Telegram 허용 사용자 ID (CSV)
 - `--owner-email` 대시보드 관리용 소유자 이메일
 - `--ttl` 터널 유효 시간(초), 60-86400 (기본: 3600)
@@ -111,7 +111,7 @@ const mygensite = require('mygensite');
 - `auth_method` (string) 인증 방식 (Layer 2, CSV): `password`, `google`, `telegram`. 복수 지정 시 콤마 구분 (예: `password,google`).
 - `password` (string) 접근 제어 비밀번호. `auth_method`에 `password` 포함 시 사용. 미지정 시 자동 생성.
 - `allowed_ips` (string[]) `access`가 `ip`일 때 허용할 IP 목록. CIDR 표기 지원.
-- `google` (string[]) `auth_method`에 `google` 포함 시 허용할 이메일 목록.
+- `google` (string[]) `auth_method`에 `google` 포함 시 허용할 이메일 또는 `@domain.com` 도메인 패턴 목록.
 - `telegram` (string[]) `auth_method`에 `telegram` 포함 시 허용할 Telegram 사용자 ID 목록.
 - `owner_email` (string) 대시보드 관리용 소유자 이메일.
 - `ttl` (number) 터널 유효 시간(초), 60-86400. 기본값: 3600.
@@ -294,7 +294,7 @@ console.log(site.expires_at);    // "2025-06-02T12:00:00Z"
 | `auth_method` | string | | — | 인증 방식 (Layer 2, CSV): `password`, `google`, `telegram`. |
 | `password` | string | | 자동 | 접근 제어 비밀번호. `auth_method`에 `password` 포함 시 사용. |
 | `allowed_ips` | string[] | | — | `access`가 `ip`일 때 허용할 IP. CIDR 지원. |
-| `google` | string[] | | — | `auth_method`에 `google` 포함 시 허용할 이메일 목록. |
+| `google` | string[] | | — | `auth_method`에 `google` 포함 시 허용할 이메일 또는 `@domain.com` 패턴 목록. |
 | `telegram` | string[] | | — | `auth_method`에 `telegram` 포함 시 허용할 Telegram 사용자 ID 목록. |
 | `owner_email` | string | | — | 대시보드 관리용 소유자 이메일. |
 | `ttl` | number | | 3600 | 사이트 유효 시간(초), 60-86400. |

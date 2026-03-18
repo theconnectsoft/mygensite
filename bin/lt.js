@@ -38,7 +38,7 @@ yargs
         describe: 'Password for password auth',
       })
       .option('google', {
-        describe: 'Allowed Google emails (CSV)',
+        describe: 'Allowed Google emails or @domain.com patterns (CSV)',
       })
       .option('telegram', {
         describe: 'Allowed Telegram user IDs (CSV)',
@@ -143,7 +143,7 @@ yargs
         describe: 'Password for password auth',
       })
       .option('google', {
-        describe: 'Allowed Google emails (CSV)',
+        describe: 'Allowed Google emails or @domain.com patterns (CSV)',
       })
       .option('telegram', {
         describe: 'Allowed Telegram user IDs (CSV)',
