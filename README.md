@@ -182,7 +182,7 @@ Full runnable examples in [`examples/`](https://github.com/theconnectsoft/mygens
 
 ### Slug (subdomain)
 
-- 3–63 characters, lowercase letters, numbers, and hyphens only
+- 4–63 characters, lowercase letters, numbers, and hyphens only
 - Must start and end with a letter or number (not a hyphen)
 - Reserved: `www`, `api`, `dashboard`, `admin`, `docs`, `status`, `health`, etc.
 - A slug used as a tunnel cannot be reused for static deploy (and vice versa)
@@ -224,7 +224,7 @@ validate.validateTTL(30);             // { valid: false, error: '...' }
 
 | status | error | when | fix |
 |--------|-------|------|-----|
-| 400 | `invalid_slug` | slug format invalid | use 3-63 chars, lowercase alphanum + hyphen (e.g. `my-app-1`) |
+| 400 | `invalid_slug` | slug format invalid | use 4-63 chars, lowercase alphanum + hyphen (e.g. `my-app-1`) |
 | 400 | `reserved_slug` | slug is reserved | choose different slug. reserved: www, api, dashboard, admin, etc. |
 | 400 | `invalid_ttl` | TTL out of range | tunnels: 60-86400s, static: 0 (unlimited) or 60-259200s. Unlimited requires auth. |
 | 400 | `invalid_access` | bad access mode | use: public, ip |

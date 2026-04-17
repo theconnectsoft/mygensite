@@ -167,7 +167,7 @@ await tunnel.extendTTL(3600);
 
 ### Slug (subdomain)
 
-- 3–63 characters, lowercase letters (`a-z`), numbers (`0-9`), and hyphens (`-`) only
+- 4–63 characters, lowercase letters (`a-z`), numbers (`0-9`), and hyphens (`-`) only
 - Must start and end with a letter or number (not a hyphen)
 - Reserved words cannot be used: `www`, `api`, `dashboard`, `admin`, `mail`, `ftp`, `static`, `docs`, `status`, `health`, `internal`, `tunnel`, `app`, `web`
 - A slug used as a tunnel cannot be reused for static deployment (and vice versa). Delete the existing service first.
@@ -220,7 +220,7 @@ const tunnel = await mygensite({ port: 3000, subdomain: 'INVALID' });
 const { validate } = require('mygensite');
 
 validate.validateSlug('my-app');         // { valid: true }
-validate.validateSlug('AB');             // { valid: false, error: 'Slug must be 3-63 characters' }
+validate.validateSlug('AB');             // { valid: false, error: 'Slug must be 4-63 characters' }
 validate.validateFilePath('assets/x.js');// { valid: true, cleaned: 'assets/x.js' }
 validate.validateFilePath('../etc');     // { valid: false, error: 'Path traversal...' }
 validate.validateTTL(30);               // { valid: false, error: 'TTL must be...' }
@@ -233,7 +233,7 @@ validate.validateAccessMode('public');   // { valid: true }
 
 | status | error | description | fix |
 | --- | --- | --- | --- |
-| 400 | `invalid_slug` | Slug must be 3-63 chars, lowercase alphanumeric and hyphens | Use a valid slug format, e.g. `my-app-1` |
+| 400 | `invalid_slug` | Slug must be 4-63 chars, lowercase alphanumeric and hyphens | Use a valid slug format, e.g. `my-app-1` |
 | 400 | `reserved_slug` | This slug is reserved and cannot be used | Choose a different slug. Reserved: www, api, dashboard, admin, etc. |
 | 400 | `invalid_ttl` | TTL must be between 60 and 86400 seconds | Use a value between 60 (1 min) and 86400 (24 hours) |
 | 400 | `invalid_access` | Access must be: public, ip | Use one of the valid access modes |
@@ -414,7 +414,7 @@ await site.delete(true);
 | status | error | description | fix |
 | --- | --- | --- | --- |
 | 400 | `no_files` | At least one file is required | Provide `directory` or `files` option |
-| 400 | `invalid_slug` | Invalid slug format | Use 3-63 chars, lowercase alphanumeric and hyphens |
+| 400 | `invalid_slug` | Invalid slug format | Use 4-63 chars, lowercase alphanumeric and hyphens |
 | 400 | `reserved_slug` | Slug is reserved | Choose a different slug |
 | 409 | `slug_in_use` | Slug taken by another owner | Use a different slug |
 | 409 | `type_conflict` | Slug is in use as a tunnel | Use a different slug for static deployment |

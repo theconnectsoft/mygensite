@@ -6,14 +6,14 @@
   },
   "metadata": {
     "description": "Share your localhost or static sites via mygen.site with guided access control, 2-layer security, rules, and hooks",
-    "version": "2.4.0"
+    "version": "2.5.0"
   },
   "plugins": [
     {
       "name": "mygensite",
       "source": "./",
       "description": "Share what you built via mygen.site — tunnels and static deploys with interactive access control, rules for safe defaults and deployment awareness, hooks for git/tunnel safety, and multi-tunnel support",
-      "version": "2.4.0",
+      "version": "2.5.0",
       "author": {
         "name": "TheConnectSoft"
       },

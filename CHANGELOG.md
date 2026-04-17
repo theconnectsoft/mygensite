@@ -1,3 +1,18 @@
+# 2.5.0 (2026-04-17) — mygensite
+
+### Breaking
+- Minimum slug length increased from 3 to 4 characters (matches server update)
+- `mcp` added to reserved slugs (reserved for mcp.mygen.site endpoint)
+
+### Validation
+- `validateSlug()` rejects slugs shorter than 4 chars with message "Slug must be 4-63 characters"
+- `SLUG_REGEX` updated: `^[a-z0-9][a-z0-9-]{2,61}[a-z0-9]$`
+
+### Documentation
+- README.md, README.en.md, README.ko.md updated to reflect 4-63 char rule
+
+---
+
 # 2.3.0 (2026-03-13) — mygensite
 
 ### Rules (new)

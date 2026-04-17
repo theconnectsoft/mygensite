@@ -164,7 +164,7 @@ await tunnel.extendTTL(3600);
 
 ### Slug (서브도메인)
 
-- 3–63자, 소문자 영문(`a-z`), 숫자(`0-9`), 하이픈(`-`)만 허용
+- 4–63자, 소문자 영문(`a-z`), 숫자(`0-9`), 하이픈(`-`)만 허용
 - 영문자 또는 숫자로 시작/끝나야 함 (하이픈으로 시작/끝 불가)
 - 예약어 사용 불가: `www`, `api`, `dashboard`, `admin`, `mail`, `ftp`, `static`, `docs`, `status`, `health`, `internal`, `tunnel`, `app`, `web`
 - 터널로 사용 중인 slug에 정적 배포 불가 (반대도 동일). 기존 서비스를 먼저 삭제해야 함.
@@ -217,7 +217,7 @@ const tunnel = await mygensite({ port: 3000, subdomain: 'INVALID' });
 const { validate } = require('mygensite');
 
 validate.validateSlug('my-app');         // { valid: true }
-validate.validateSlug('AB');             // { valid: false, error: 'Slug must be 3-63 characters' }
+validate.validateSlug('AB');             // { valid: false, error: 'Slug must be 4-63 characters' }
 validate.validateFilePath('assets/x.js');// { valid: true, cleaned: 'assets/x.js' }
 validate.validateFilePath('../etc');     // { valid: false, error: '경로 탈출 불가...' }
 validate.validateTTL(30);               // { valid: false, error: 'TTL 범위 초과...' }
@@ -230,7 +230,7 @@ validate.validateAccessMode('public');   // { valid: true }
 
 | 상태 | 에러 | 설명 | 해결 |
 | --- | --- | --- | --- |
-| 400 | `invalid_slug` | slug는 3-63자, 소문자 영숫자와 하이픈만 가능 | 올바른 형식 사용, 예: `my-app-1` |
+| 400 | `invalid_slug` | slug는 4-63자, 소문자 영숫자와 하이픈만 가능 | 올바른 형식 사용, 예: `my-app-1` |
 | 400 | `reserved_slug` | 예약된 slug로 사용 불가 | 다른 slug 사용. 예약어: www, api, dashboard, admin 등 |
 | 400 | `invalid_ttl` | TTL은 60-86400초 범위여야 함 | 60(1분) ~ 86400(24시간) 사이 값 사용 |
 | 400 | `invalid_access` | 접근 모드는 public, ip 중 하나 | `public` 또는 `ip` 중 하나를 지정 |
@@ -412,7 +412,7 @@ await site.delete(true);
 | 상태 | 에러 | 설명 | 해결 |
 | --- | --- | --- | --- |
 | 400 | `no_files` | 최소 1개 파일 필요 | `directory` 또는 `files` 옵션 제공 |
-| 400 | `invalid_slug` | 잘못된 slug 형식 | 3-63자, 소문자 영숫자와 하이픈 사용 |
+| 400 | `invalid_slug` | 잘못된 slug 형식 | 4-63자, 소문자 영숫자와 하이픈 사용 |
 | 400 | `reserved_slug` | 예약된 slug | 다른 slug 사용 |
 | 409 | `slug_in_use` | 다른 소유자가 사용 중인 slug | 다른 slug 사용 |
 | 409 | `type_conflict` | 터널로 사용 중인 slug | 정적 배포용으로 다른 slug 사용 |

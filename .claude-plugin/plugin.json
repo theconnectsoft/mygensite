@@ -1,7 +1,7 @@
 {
   "name": "mygensite",
   "description": "Share your localhost or static sites via mygen.site — guided access control, 2-layer security, rules for safe defaults, hooks for git/tunnel safety, multi-tunnel support",
-  "version": "2.3.5",
+  "version": "2.5.0",
   "author": {
     "name": "TheConnectSoft",
     "email": "dev@theconnectsoft.com",

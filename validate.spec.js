@@ -17,11 +17,12 @@ describe('validateSlug', () => {
   it('accepts valid slugs', () => {
     assert.ok(validateSlug('my-app').valid);
     assert.ok(validateSlug('test-123').valid);
-    assert.ok(validateSlug('abc').valid);
+    assert.ok(validateSlug('abcd').valid);
   });
 
   it('rejects too short', () => {
     assert.strictEqual(validateSlug('ab').valid, false);
+    assert.strictEqual(validateSlug('abc').valid, false);
   });
 
   it('rejects uppercase', () => {
