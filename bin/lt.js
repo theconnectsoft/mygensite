@@ -202,6 +202,14 @@ yargs
       console.error('tunnel error: %s', err.message);
     });
 
+    tunnel.on('reconnecting', () => {
+      console.log('tunnel disconnected, reconnecting...');
+    });
+
+    tunnel.on('reconnect', url => {
+      console.log('tunnel re-established: %s', url);
+    });
+
     console.log('your url is: %s', tunnel.url);
 
     if (tunnel.password) {
