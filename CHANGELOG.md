@@ -1,3 +1,22 @@
+# 2.6.0 (2026-07-02) — mygensite
+
+### Reliability
+- **Auto-reconnect (ssh-tunnel-like)**: when the remote TCP listener disappears
+  (server restart, grace timeout, expiry), the client re-registers through the
+  API using its stored `admin_token` and re-opens the socket pool on the fresh
+  port. Exponential backoff 1s → 15s, reset once a socket connects.
+- Reconnect responses no longer clobber `tunnel.admin_token` / `tunnel.password`
+  with `null`.
+- A second refused socket can no longer crash the process via an unhandled
+  `'error'` event.
+
+### Events
+- `tunnel.on('reconnecting')` — connection lost, re-registration scheduled
+- `tunnel.on('reconnect', url)` — tunnel re-established
+- CLI logs both events.
+
+---
+
 # 2.5.0 (2026-04-17) — mygensite
 
 ### Breaking

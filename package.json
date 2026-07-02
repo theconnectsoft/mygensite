@@ -1,7 +1,7 @@
 {
   "name": "mygensite",
   "description": "Expose your localhost to mygen.site with access control",
-  "version": "2.5.1",
+  "version": "2.6.0",
   "license": "MIT",
   "repository": {
     "type": "git",
