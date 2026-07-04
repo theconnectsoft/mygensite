@@ -65,6 +65,10 @@ await tunnel.extendTTL(3600);
 tunnel.close();
 ```
 
+Tunnels auto-reconnect like an ssh tunnel (v2.6.0+): network blips and server
+restarts recover automatically while the process is running
+(`tunnel.on('reconnecting')` / `tunnel.on('reconnect', url)`).
+
 ## Deploy (static site hosting)
 
 ```js

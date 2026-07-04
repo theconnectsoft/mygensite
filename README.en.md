@@ -135,6 +135,16 @@ const mygensite = require('mygensite');
 | request | info | fires when a request is processed, contains `method` and `path` |
 | error | err | fires when an error happens on the tunnel |
 | close | | fires when the tunnel has closed |
+| reconnecting | | connection lost — the client is re-registering with the server |
+| reconnect | url | tunnel re-established after a disconnect |
+
+#### Auto-reconnect
+
+Since v2.6.0 the tunnel behaves like an auto-reconnecting ssh tunnel: if the
+connection drops (network blip, server restart, listener expiry), the client
+re-registers through the API using its stored `admin_token` and re-opens the
+socket pool — with exponential backoff (1s → 15s). Just keep the process
+running; no manual handling required.
 
 #### Methods
 

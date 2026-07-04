@@ -135,6 +135,15 @@ const mygensite = require('mygensite');
 | request | info | 요청 처리 시 발생, `method`와 `path` 포함 |
 | error | err | 터널 에러 발생 시 |
 | close | | 터널 종료 시 |
+| reconnecting | | 연결 끊김 — 서버에 재등록 시도 중 |
+| reconnect | url | 끊긴 터널이 다시 수립됨 |
+
+#### 자동 재연결
+
+v2.6.0부터 터널은 ssh 터널처럼 자동으로 재연결됩니다. 연결이 끊기면
+(네트워크 순단, 서버 재시작, 리스너 만료) 클라이언트가 저장된
+`admin_token`으로 API에 재등록하고 소켓 풀을 다시 엽니다 —
+지수 백오프(1s → 15s). 프로세스만 살려두면 별도 처리가 필요 없습니다.
 
 #### 메서드
 
