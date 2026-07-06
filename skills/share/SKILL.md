@@ -167,7 +167,9 @@ google: 'alice@co.com,@co.com', // when auth_method includes 'google' (supports 
 telegram: '123456789',       // when auth_method includes 'telegram'
 ```
 
-Save the chosen access settings in `.claude/mygen.json` alongside the service entry so they can be reused on redeploy.
+Save the chosen access settings in `.claude/mygen.json` alongside the service entry for reference.
+
+> **Redeploy note (files changed):** when redeploying with `admin_token`, **omit** `access`/`auth_method`/`allowed_ips`/`ttl` — the server keeps the service's current settings (including changes made later in the dashboard). Only pass them to intentionally change settings.
 
 > **Tip**: If `$ARGUMENTS` explicitly says "public" or "password", skip the questions and use that directly.
 
@@ -187,12 +189,14 @@ const site = await localtunnel.deploy({
   directory: './dist',              // auto-detect: dist, build, out, .next, or '.'
   subdomain: '{slug_or_undefined}', // from mygen.json or omit for auto
   owner_email: '{owner_email}',
+  // Access params: set on FIRST deploy only. On redeploy (admin_token set),
+  // omit them all — the server keeps current settings (dashboard changes survive).
   access: '{access}',              // from access control setup
   auth_method: '{auth_method}',    // from access control setup, omit if none
   password: '{password}',          // when auth_method includes 'password'
   google: '{emails}',              // when auth_method includes 'google'
   telegram: '{ids}',               // when auth_method includes 'telegram'
-  ttl: 86400,
+  ttl: 86400,                      // omit on redeploy to keep the current timer
   admin_token: '{token_or_undefined}', // if redeploying existing service
 });
 
@@ -415,6 +419,8 @@ curl -X PATCH https://mygen.site/api/services/{slug} \
 | Upload new files | Redeploy (`deploy --admin-token`) |
 
 **If files haven't changed, use PATCH. Redeploying for settings changes is wasteful.**
+
+**When redeploying, send files only** — omitted `access`/`auth_method`/`ttl` fields keep the service's current settings, so dashboard-made changes are never reset.
 
 When redeployment is needed, always use the existing admin_token:
 ```bash
