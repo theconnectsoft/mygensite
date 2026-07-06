@@ -108,7 +108,10 @@ Directory uploads skip hidden files and directories (`.git`, `.DS_Store`, `.giti
 Content-Type is guessed from each file's extension; unknown extensions become
 `application/octet-stream` — use `mime_types` to override (the server serves files
 with exactly the type sent at upload; it does not re-guess). `mime_types` also accepts
-a function `(name, defaultType) => string | undefined`.
+a function `(name, defaultType) => string | undefined`. Types specified via
+`files[].contentType` or `mime_types` preserve parameters like `charset`
+(e.g. `'text/html; charset=euc-kr'`) — they are sent through a side-channel field
+because multipart part headers keep only the base type.
 
 ## Manage (existing service)
 

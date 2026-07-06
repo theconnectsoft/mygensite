@@ -318,9 +318,10 @@ console.log(site.expires_at);    // "2025-06-02T12:00:00Z"
 
 > **Directory uploads** skip hidden files and directories (`.git`, `.DS_Store`, `.gitignore`, ...) automatically.
 > Content-Type is guessed from each file's extension; unknown extensions become `application/octet-stream` — use
-> `mime_types` (or the repeatable CLI flag `--mime .glb=model/gltf-binary`) to override. The server serves each
-> file with exactly the base type sent at upload: it does not re-guess from the extension, and parameters like
-> `charset` are stripped — declare encoding with `<meta charset="utf-8">` inside the HTML.
+> `mime_types` (or the repeatable CLI flag `--mime .glb=model/gltf-binary`) to override. The server does not
+> re-guess from the extension. Types you specify via `files[].contentType` or `mime_types` are transmitted through
+> a side-channel `mimetypes` field, so **parameters like `charset` are preserved** (e.g.
+> `'text/html; charset=euc-kr'`); guessed types travel in the part header, which keeps only the base type.
 
 #### Deploy with inline files
 

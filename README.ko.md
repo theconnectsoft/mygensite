@@ -315,8 +315,9 @@ console.log(site.expires_at);    // "2025-06-02T12:00:00Z"
 > **디렉토리 업로드**는 숨김 파일/디렉토리(`.git`, `.DS_Store`, `.gitignore` 등)를 자동으로 제외합니다.
 > Content-Type은 확장자로 추측하며, 모르는 확장자는 `application/octet-stream`이 됩니다 —
 > `mime_types` 옵션이나 CLI의 `--mime .glb=model/gltf-binary` 플래그(반복 가능)로 재정의하세요.
-> 서버는 업로드 시 보낸 base type을 그대로 서빙하고(확장자 재추측 없음), `charset` 등의 파라미터는
-> 제거되므로 인코딩은 HTML 내부의 `<meta charset="utf-8">`로 선언해야 합니다.
+> 서버는 확장자를 재추측하지 않습니다. `files[].contentType`이나 `mime_types`로 직접 지정한 타입은
+> side-channel `mimetypes` 필드로 전송되어 **`charset` 등 파라미터까지 보존**됩니다
+> (예: `'text/html; charset=euc-kr'`). 추측된 타입은 파트 헤더로만 전달되어 base type만 유지됩니다.
 
 #### 인라인 파일로 배포
 

@@ -9,6 +9,7 @@ const deploy = require('./lib/deploy');
 const readDirectoryRecursive = deploy._readDirectoryRecursive;
 const guessMimeType = deploy._guessMimeType;
 const resolveMimeOverride = deploy._resolveMimeOverride;
+const buildForcedMimeMap = deploy._buildForcedMimeMap;
 
 describe('readDirectoryRecursive', () => {
   let tmpDir;
@@ -130,5 +131,25 @@ describe('resolveMimeOverride (mime_types option)', () => {
     assert.strictEqual(resolveMimeOverride('a.css', undefined), undefined);
     assert.strictEqual(resolveMimeOverride('a.css', {}), undefined);
     assert.strictEqual(resolveMimeOverride('noext', { '.glb': 'model/gltf-binary' }), undefined);
+  });
+});
+
+describe('buildForcedMimeMap (mimetypes side-channel field)', () => {
+  it('collects only user-specified (forced) types, including parameters', () => {
+    const map = buildForcedMimeMap([
+      { name: 'index.html', contentType: 'text/html; charset=euc-kr', forced: true },
+      { name: 'style.css', contentType: 'text/css', forced: false },
+      { name: 'model.glb', contentType: 'model/gltf-binary', forced: true },
+    ]);
+    assert.deepStrictEqual(map, {
+      'index.html': 'text/html; charset=euc-kr',
+      'model.glb': 'model/gltf-binary',
+    });
+  });
+
+  it('returns null when no file has a forced type', () => {
+    assert.strictEqual(buildForcedMimeMap([
+      { name: 'index.html', contentType: 'text/html', forced: false },
+    ]), null);
   });
 });

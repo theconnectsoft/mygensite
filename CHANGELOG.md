@@ -1,3 +1,16 @@
+# 2.7.1 (2026-07-06) — mygensite
+
+### Deploy: full Content-Type preservation (charset etc.)
+- Types you specify via `files[].contentType` or `mime_types` are now also sent
+  through a new `mimetypes` side-channel form field (JSON map of only the
+  specified files). The server (mygen.site) applies it with top priority, so
+  parameters like `charset` survive — multipart part headers keep only the base
+  type (`text/html; charset=euc-kr` used to arrive as `text/html`).
+- Guessed types still travel in the part header only; nothing is sent for them.
+- Backward compatible: older servers ignore the extra field.
+
+---
+
 # 2.7.0 (2026-07-06) — mygensite
 
 ### Deploy: directory uploads
