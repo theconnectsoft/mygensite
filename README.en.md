@@ -312,8 +312,15 @@ console.log(site.expires_at);    // "2025-06-02T12:00:00Z"
 | `owner_email` | string | | — | Owner email for dashboard management. |
 | `ttl` | number | | 3600 | Site TTL in seconds (60-86400). |
 | `admin_token` | string | | — | Provide for redeployment to an existing slug. |
+| `mime_types` | object \| function | | — | Content-Type overrides. Map keys: exact relative path (`'data/blob'`) or extension (`'.glb'` / `'glb'`); exact path wins. Or a function `(name, defaultType) => string \| undefined`. |
 
 \* Either `directory` or `files` is required.
+
+> **Directory uploads** skip hidden files and directories (`.git`, `.DS_Store`, `.gitignore`, ...) automatically.
+> Content-Type is guessed from each file's extension; unknown extensions become `application/octet-stream` — use
+> `mime_types` (or the repeatable CLI flag `--mime .glb=model/gltf-binary`) to override. The server serves each
+> file with exactly the base type sent at upload: it does not re-guess from the extension, and parameters like
+> `charset` are stripped — declare encoding with `<meta charset="utf-8">` inside the HTML.
 
 #### Deploy with inline files
 

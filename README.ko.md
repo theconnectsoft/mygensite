@@ -308,8 +308,15 @@ console.log(site.expires_at);    // "2025-06-02T12:00:00Z"
 | `owner_email` | string | | — | 대시보드 관리용 소유자 이메일. |
 | `ttl` | number | | 3600 | 사이트 유효 시간(초), 60-86400. |
 | `admin_token` | string | | — | 기존 slug에 재배포할 때 사용. |
+| `mime_types` | object \| function | | — | Content-Type 재정의. 키: 정확한 상대 경로(`'data/blob'`) 또는 확장자(`'.glb'` / `'glb'`), 경로가 확장자보다 우선. 함수 형태 `(name, defaultType) => string \| undefined`도 지원. |
 
 \* `directory` 또는 `files` 중 하나는 필수.
+
+> **디렉토리 업로드**는 숨김 파일/디렉토리(`.git`, `.DS_Store`, `.gitignore` 등)를 자동으로 제외합니다.
+> Content-Type은 확장자로 추측하며, 모르는 확장자는 `application/octet-stream`이 됩니다 —
+> `mime_types` 옵션이나 CLI의 `--mime .glb=model/gltf-binary` 플래그(반복 가능)로 재정의하세요.
+> 서버는 업로드 시 보낸 base type을 그대로 서빙하고(확장자 재추측 없음), `charset` 등의 파라미터는
+> 제거되므로 인코딩은 HTML 내부의 `<meta charset="utf-8">`로 선언해야 합니다.
 
 #### 인라인 파일로 배포
 

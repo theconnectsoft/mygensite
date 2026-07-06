@@ -84,6 +84,10 @@ const site = await mygensite.deploy({
   owner_email: 'alice@company.com',      // optional: email or Telegram username for dashboard
   ttl: 86400,                            // optional: 0 (unlimited) or 60-259200 seconds (default: 3600)
   token: 'mgs_xxx',                      // optional: API token (or set MYGENSITE_TOKEN env)
+  mime_types: {                          // optional: Content-Type overrides
+    '.glb': 'model/gltf-binary',         //   by extension ('.glb' or 'glb')
+    'data/blob': 'application/json',     //   or by exact relative path (wins over extension)
+  },
 });
 
 // Result
@@ -99,6 +103,12 @@ await site.redeploy('./dist-v2');   // upload new files
 await site.delete();                // soft delete
 await site.delete(true);            // purge (delete S3 files too)
 ```
+
+Directory uploads skip hidden files and directories (`.git`, `.DS_Store`, `.gitignore`, ...) automatically.
+Content-Type is guessed from each file's extension; unknown extensions become
+`application/octet-stream` — use `mime_types` to override (the server serves files
+with exactly the type sent at upload; it does not re-guess). `mime_types` also accepts
+a function `(name, defaultType) => string | undefined`.
 
 ## Manage (existing service)
 

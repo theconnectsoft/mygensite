@@ -1,3 +1,30 @@
+# 2.7.0 (2026-07-06) — mygensite
+
+### Deploy: directory uploads
+- **Hidden files no longer break the deploy**: `deploy({ directory })` now skips
+  hidden files and directories (`.git`, `.DS_Store`, `.gitignore`, ...) instead of
+  aborting the whole upload with a validation error.
+- **Windows**: relative paths are normalized to forward slashes
+  (`path.sep` aware), so nested directories deploy correctly on Windows.
+- **Symlinks**: file symlinks are followed; directory symlinks and broken
+  symlinks are skipped (cycle safety).
+
+### Deploy: Content-Type
+- New `mime_types` option (and CLI `--mime key=type`, repeatable) to override
+  the Content-Type per extension (`'.glb'` / `'glb'`) or exact relative path
+  (`'data/blob'`; path wins over extension). A function form
+  `(name, defaultType) => string | undefined` is also accepted.
+  Precedence: explicit `files[].contentType` > `mime_types` > extension guess.
+- Extension MIME map extended: avif, bmp, mp4, webm, mov, mp3, wav, m4a, ogg,
+  wasm, cjs, md, csv, yaml/yml, gz, eot.
+
+### Notes
+- The server serves each file with exactly the base type sent at upload — it
+  does not re-guess from the extension, and parameters like `charset` are
+  stripped. Declare encoding inside the HTML (`<meta charset="utf-8">`).
+
+---
+
 # 2.6.0 (2026-07-02) — mygensite
 
 ### Reliability

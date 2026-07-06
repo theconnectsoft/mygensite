@@ -55,9 +55,25 @@ yargs
       })
       .option('token', {
         describe: 'API token (mgs_xxx) for authentication. Also reads MYGENSITE_TOKEN env.',
+      })
+      .option('mime', {
+        describe: 'MIME override(s): ext=type or path=type (e.g. --mime .glb=model/gltf-binary --mime data/blob=application/json)',
+        type: 'array',
       });
   }, async (argv) => {
     try {
+      let mimeTypes;
+      if (argv.mime && argv.mime.length > 0) {
+        mimeTypes = {};
+        for (const pair of argv.mime) {
+          const idx = String(pair).indexOf('=');
+          if (idx <= 0) {
+            console.error('invalid --mime value: %s (expected key=type, e.g. .glb=model/gltf-binary)', pair);
+            process.exit(1);
+          }
+          mimeTypes[String(pair).slice(0, idx)] = String(pair).slice(idx + 1);
+        }
+      }
       const result = await deploy({
         host: argv.host,
         subdomain: argv.subdomain,
@@ -71,6 +87,7 @@ yargs
         ttl: argv.ttl,
         admin_token: argv.adminToken,
         token: argv.token,
+        mime_types: mimeTypes,
       });
 
       console.log('your url is: %s', result.url);
