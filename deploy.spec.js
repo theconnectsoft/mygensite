@@ -2,6 +2,7 @@
 
 const assert = require('assert');
 const fs = require('fs');
+const http = require('http');
 const os = require('os');
 const path = require('path');
 const deploy = require('./lib/deploy');
@@ -131,6 +132,60 @@ describe('resolveMimeOverride (mime_types option)', () => {
     assert.strictEqual(resolveMimeOverride('a.css', undefined), undefined);
     assert.strictEqual(resolveMimeOverride('a.css', {}), undefined);
     assert.strictEqual(resolveMimeOverride('noext', { '.glb': 'model/gltf-binary' }), undefined);
+  });
+});
+
+describe('deploy field transmission (mock server)', () => {
+  let server;
+  let captured;
+  let port;
+
+  beforeEach(async () => {
+    captured = null;
+    server = http.createServer((req, res) => {
+      const chunks = [];
+      req.on('data', c => chunks.push(c));
+      req.on('end', () => {
+        captured = Buffer.concat(chunks).toString('latin1');
+        res.setHeader('content-type', 'application/json');
+        res.setHeader('connection', 'close'); // no lingering keep-alive sockets between tests
+        res.end(JSON.stringify({ url: 'https://x.mygen.site', slug: 'x', admin_token: 'tok_x' }));
+      });
+    });
+    await new Promise(resolve => server.listen(0, resolve));
+    port = server.address().port;
+  });
+
+  afterEach(() => new Promise(resolve => {
+    server.closeAllConnections();
+    server.close(resolve);
+  }));
+
+  const FILES = [{ name: 'index.html', content: '<h1>x</h1>' }];
+
+  it('omits access when not specified — redeploy must not reset server-side ACLs', async () => {
+    await deploy({ host: `http://localhost:${port}`, files: FILES });
+    assert.ok(captured, 'request captured');
+    assert.ok(!captured.includes('name="access"'), 'access field must not be sent');
+    assert.ok(!captured.includes('name="allowed_ips"'), 'allowed_ips field must not be sent');
+    assert.ok(!captured.includes('name="auth_method"'), 'auth_method field must not be sent');
+    assert.ok(!captured.includes('name="ttl"'), 'ttl field must not be sent');
+  });
+
+  it('sends access only when explicitly specified', async () => {
+    await deploy({ host: `http://localhost:${port}`, files: FILES, access: 'public' });
+    assert.ok(captured.includes('name="access"'));
+  });
+
+  it('sends ttl 0 (unlimited)', async () => {
+    await deploy({
+      host: `http://localhost:${port}`,
+      files: FILES,
+      ttl: 0,
+      auth_method: 'password',
+      password: 'secret',
+    });
+    assert.ok(/name="ttl"\r\n\r\n0\r\n/.test(captured), 'ttl=0 must be transmitted');
   });
 });
 

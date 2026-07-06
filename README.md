@@ -78,7 +78,7 @@ const site = await mygensite.deploy({
   directory: './dist',                   // required: local directory to upload
   subdomain: 'demo',                     // optional: default random
   host: 'https://mygen.site',           // optional: default mygen.site
-  access: 'public',                      // optional: 'public' | 'ip' (default: 'public')
+  access: 'public',                      // optional: 'public' | 'ip' (omit to keep current settings on redeploy; new deploys default to public)
   auth_method: 'password',              // optional: CSV of 'password', 'google', 'telegram'
   password: 'secret',                   // when auth_method includes 'password'
   owner_email: 'alice@company.com',      // optional: email or Telegram username for dashboard
@@ -103,6 +103,9 @@ await site.redeploy('./dist-v2');   // upload new files
 await site.delete();                // soft delete
 await site.delete(true);            // purge (delete S3 files too)
 ```
+
+On redeploy, only the fields you pass are updated — omit `access`/`auth_method`/`ttl`
+to keep the service's current settings (e.g. ACLs configured in the dashboard).
 
 Directory uploads skip hidden files and directories (`.git`, `.DS_Store`, `.gitignore`, ...) automatically.
 Content-Type is guessed from each file's extension; unknown extensions become

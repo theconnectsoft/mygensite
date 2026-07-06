@@ -303,7 +303,7 @@ console.log(site.expires_at);    // "2025-06-02T12:00:00Z"
 | `files` | Array | * | — | Alternative to `directory`. Array of `{ name, content, contentType? }` objects. |
 | `subdomain` | string | | random | Request a specific subdomain. |
 | `host` | string | | `https://mygen.site` | Server URL. |
-| `access` | string | | `public` | Network access: `public`, `ip`. |
+| `access` | string | | — | Network access: `public`, `ip`. Not sent when omitted — new deploys default to `public` server-side; **redeploys keep the service's current settings** (nothing gets reset). |
 | `auth_method` | string | | — | Auth methods CSV: `password`, `google`, `telegram`. |
 | `password` | string | | auto | Password (when auth_method includes 'password'). |
 | `google` | string\|string[] | | — | Allowed Google email(s) or `@domain.com` patterns (when auth_method includes 'google'). |

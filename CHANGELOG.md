@@ -1,4 +1,13 @@
-# 2.7.1 (2026-07-06) — mygensite
+# 2.8.0 (2026-07-06) — mygensite
+
+### Deploy: redeploys no longer reset server-side settings
+- **`access` no longer defaults to `'public'`** in `deploy()`. Previously the
+  SDK always sent `access=public` even when you omitted it, so a files-only
+  redeploy silently reset ACLs configured via the dashboard or PATCH (e.g.
+  `access=ip` + `allowed_ips`). Now only fields you explicitly pass are sent;
+  the server updates just those and keeps the rest. New deploys still default
+  to `public` server-side.
+- `ttl: 0` (unlimited) is now actually transmitted (was dropped by a falsy check).
 
 ### Deploy: full Content-Type preservation (charset etc.)
 - Types you specify via `files[].contentType` or `mime_types` are now also sent
@@ -8,6 +17,14 @@
   type (`text/html; charset=euc-kr` used to arrive as `text/html`).
 - Guessed types still travel in the part header only; nothing is sent for them.
 - Backward compatible: older servers ignore the extra field.
+
+### Tunnel reliability
+- Connect-time socket errors other than ECONNREFUSED (e.g. ECONNRESET while
+  the server restarts) now also trigger API re-registration. Previously a
+  socket that died before `connect` emitted no event at all and the client
+  went silent with no reconnect and no error.
+- Socket errors arriving after `tunnel.close()` are swallowed instead of
+  re-emitted as `'error'` (teardown noise could crash listener-less processes).
 
 ---
 

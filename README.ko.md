@@ -299,7 +299,7 @@ console.log(site.expires_at);    // "2025-06-02T12:00:00Z"
 | `files` | Array | * | — | `directory` 대신 사용. `{ name, content, contentType? }` 객체 배열. |
 | `subdomain` | string | | 랜덤 | 원하는 서브도메인 지정. |
 | `host` | string | | `https://mygen.site` | 서버 URL. |
-| `access` | string | | `public` | 네트워크 접근 제어 (Layer 1): `public`, `ip`. |
+| `access` | string | | — | 네트워크 접근 제어 (Layer 1): `public`, `ip`. 생략 시 전송하지 않음 — 신규 배포는 서버 기본값 `public`, **재배포는 기존 설정 유지** (대시보드에서 바꾼 ACL이 리셋되지 않음). |
 | `auth_method` | string | | — | 인증 방식 (Layer 2, CSV): `password`, `google`, `telegram`. |
 | `password` | string | | 자동 | 접근 제어 비밀번호. `auth_method`에 `password` 포함 시 사용. |
 | `allowed_ips` | string[] | | — | `access`가 `ip`일 때 허용할 IP. CIDR 지원. |
